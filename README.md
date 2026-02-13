@@ -1,2 +1,2 @@
-# SDG-GOAL---Decent-work-and-economic-growth
+# BridgeRural
  An website for internship eligibility for youth in rural or disadvantaged areas.
