@@ -1,5 +1,10 @@
 import express from "express";
-import { createInternshipController } from "../controllers/internshipController.js";
+import { 
+  createInternshipController,
+   updateInternshipController,
+    deleteInternshipController 
+
+} from "../controllers/internshipController.js";
 
 import { fakeProtect } from "../middleware/fakeAuth.js";
 import { authorizeRoles } from "../middleware/roleMiddleware.js";
@@ -11,6 +16,30 @@ router.post("/",
   fakeProtect, 
   authorizeRoles("Organization"),
   createInternshipController
+);
+
+// Route to update an existing internship (protected, only for organizations)
+router.put("/:id", 
+  fakeProtect, 
+  authorizeRoles("Organization"),
+  updateInternshipController
+);
+
+// Route to delete an internship (protected, only for organizations)
+router.delete("/:id",
+  fakeProtect,
+  authorizeRoles("Organization"),
+  deleteInternshipController
+);  
+
+// Route to get a single internship by ID (public)
+router.get("/:id", getInternshipByIdController);
+
+// Route to get all internships for the logged-in organization (protected, only for organizations)
+router.get("/my-internships", 
+  fakeProtect, 
+  authorizeRoles("Organization"),
+  getMyInternships
 );
 
 export default router;
