@@ -48,8 +48,19 @@ export const getInternshipByIdService = async (internshipId) => {
 };
 
 //Get All Internships
-export const getMyInternshipsService = async (organizationId) => {
-  const internships = await Internship.find({ organizationId })
-    .sort({ createdAt: -1 }); // Sort by creation date (newest first)
-  return internships;
+export const getMyInternshipsService = async (organizationId,status) => {
+  const filter = { organizationId };
+
+  if(status){
+    filter.status = status;
+  }
+
+  const [internships,count] = await Promise.all([
+    (await Internship.find(filter)).toSorted({createdAt : -1}),
+    Internship.countDocuments(filter)
+  ]);
+  return {
+    internships,
+    count
+  };
 };
