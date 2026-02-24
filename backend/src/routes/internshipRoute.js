@@ -1,8 +1,10 @@
 import express from "express";
 import { 
   createInternshipController,
-   updateInternshipController,
-    deleteInternshipController 
+  updateInternshipController,
+  deleteInternshipController,
+  getInternshipByIdController,
+  getMyInternships
 
 } from "../controllers/internshipController.js";
 
@@ -32,14 +34,15 @@ router.delete("/:id",
   deleteInternshipController
 );  
 
-// Route to get a single internship by ID (public)
-router.get("/:id", getInternshipByIdController);
-
 // Route to get all internships for the logged-in organization (protected, only for organizations)
 router.get("/my-internships", 
   fakeProtect, 
   authorizeRoles("Organization"),
   getMyInternships
 );
+
+
+// Route to get a single internship by ID (public)
+router.get("/:id", getInternshipByIdController);
 
 export default router;
