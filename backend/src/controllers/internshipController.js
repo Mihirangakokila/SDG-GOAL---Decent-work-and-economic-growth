@@ -2,8 +2,8 @@ import {
   createInternship ,
   updateInternship,
   deleteInternship,
-  getInternshipByIdController,
-  getMyInternships
+  getInternshipByIdService,
+  getMyInternshipsService
 } from "../services/internshipService.js";
 
 // Controller to handle internship creation
@@ -24,9 +24,9 @@ export const createInternshipController = async (req, res) => {
 export const updateInternshipController = async (req, res) => {
   try{  
     const internship = await updateInternship(
+      req.body,
       req.params.id,
       req.user.id,
-      req.body
     );  
 
     res.json(internship);
@@ -61,8 +61,12 @@ export const getInternshipByIdController = async (req, res) => {
 //Get My Internships (Organization)
 export const getMyInternships  = async (req, res) => {
   try {
-    const internships = await getMyInternshipsService(req.user.id);   
-    res.json(internships);
+
+    const {status} = req.query;
+
+    const result = await getMyInternshipsService(req.user.id,status);
+
+    res.json(result);
   }
     catch(error){ 
     res.status(500).json({message : error.message});
