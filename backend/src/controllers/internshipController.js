@@ -3,7 +3,9 @@ import {
   updateInternship,
   deleteInternship,
   getInternshipByIdService,
-  getMyInternshipsService
+  getMyInternshipsService,
+  incrementViewCountService,
+  getDashboardStatsService
 } from "../services/internshipService.js";
 
 // Controller to handle internship creation
@@ -70,5 +72,42 @@ export const getMyInternships  = async (req, res) => {
   }
     catch(error){ 
     res.status(500).json({message : error.message});
+  }
+};
+
+//Get increament view count
+export const incrementViewCountController = async (req, res) => {
+  try {
+    const internship = await incrementViewCountService(req.params.id);
+
+    res.json({
+      success: true,
+      data: internship
+    });
+
+  } catch(error){
+    res.status(500).json({
+      success: false,
+      message : error.message
+    });
+  }   
+};
+
+// ✅ Dashboard Analytics
+export const getDashboardStats = async (req, res) => {
+  try {
+    const stats = await getDashboardStatsService(
+      req.user.id
+    );
+
+    res.json({
+      success: true,
+      data: stats,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
