@@ -3,7 +3,7 @@ import Internship from "../models/internship.js";
 import { getCoordinates } from "../utils/geocode.js";
 
 // Service function to create a new internship
-export const createInternshipService = async (data, organizationId) => {
+export const createInternship = async (data, organizationId) => {
   const internship = await Internship.create({
     ...data,
     organizationId,
