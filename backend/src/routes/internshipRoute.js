@@ -44,6 +44,9 @@ router.get("/my-internships",
   getMyInternships
 );
 
+// Search internships
+router.get("/search", searchInternshipsController);
+
 
 // Route to get a single internship by ID (public)
 router.get("/:id", getInternshipByIdController);
@@ -59,6 +62,4 @@ router.get(
   getDashboardStats
 );
 
-// Search internships
-router.get("/search", searchInternshipsController);
 export default router;
