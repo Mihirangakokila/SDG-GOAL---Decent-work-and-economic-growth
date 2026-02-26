@@ -6,7 +6,7 @@ import {
   updateMe,
   deleteUser,
 } from "../controllers/authController.js";
-import { protect, authorizeRoles } from "../middlewear/authMiddleware.js";
+import { protect, authorizeRoles } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -29,4 +29,3 @@ router.delete(
 );
 
 export default router;
-
