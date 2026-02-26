@@ -5,7 +5,10 @@ import authRoutes from "./src/routes/auth.js";
 import profileRoutes from "./src/routes/profile.js";
 import organizationRoutes from "./src/routes/organizationRoutes.js";
 
-// Load environment variables
+import internshipRoutes from "./src/routes/internshipRoute.js";
+
+
+//load environment variables
 dotenv.config();
 
 // Create express app
@@ -20,16 +23,14 @@ mongoose
   .then(() => console.log("MongoDB connected ✅"))
   .catch((err) => console.log("Error connecting to MongoDB:", err));
 
-// Simple health route
-app.get("/", (req, res) => {
+//define a simple route
+/*app.get("/", (req,res ) => {
   res.send("API is running...");
-});
+})*/
 
-// Auth routes
-app.use("/auth", authRoutes);
+// Use internship routes
+app.use("/api/internships", internshipRoutes);
 
-// Youth profile routes
-app.use("/", profileRoutes);
 
 // Organization profile routes
 app.use("/", organizationRoutes);
