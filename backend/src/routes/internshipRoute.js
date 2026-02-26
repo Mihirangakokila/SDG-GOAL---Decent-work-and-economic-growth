@@ -4,7 +4,9 @@ import {
   updateInternshipController,
   deleteInternshipController,
   getInternshipByIdController,
-  getMyInternships
+  getMyInternships,
+  incrementViewCountController,
+  getDashboardStats
 
 } from "../controllers/internshipController.js";
 
@@ -44,5 +46,16 @@ router.get("/my-internships",
 
 // Route to get a single internship by ID (public)
 router.get("/:id", getInternshipByIdController);
+
+// Route to increment view count of an internship (public)
+router.put("/view/:id", incrementViewCountController);
+
+// Dashboard
+router.get(
+  "/dashboard/stats",
+  fakeProtect,
+  authorizeRoles("Organization"),
+  getDashboardStats
+);
 
 export default router;
