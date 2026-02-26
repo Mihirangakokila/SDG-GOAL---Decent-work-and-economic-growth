@@ -1,8 +1,9 @@
 
 import Internship from "../models/internship.js";
+import { getCoordinates } from "../utils/geocode.js";
 
 // Service function to create a new internship
-export const createInternship = async (data, organizationId) => {
+export const createInternshipService = async (data, organizationId) => {
   const internship = await Internship.create({
     ...data,
     organizationId,
@@ -20,7 +21,7 @@ export const updateInternship = async (
   const internship = await Internship.findOneAndUpdate(
     {_id : internshipId, organizationId},
     data,
-    {new: true}
+    {returnDocument: 'after'}
   );
   return internship;
 };
@@ -48,19 +49,85 @@ export const getInternshipByIdService = async (internshipId) => {
 };
 
 //Get All Internships
-export const getMyInternshipsService = async (organizationId,status) => {
+export const getMyInternshipsService = async (organizationId, status) => {
+
   const filter = { organizationId };
 
-  if(status){
+  if (status) {
     filter.status = status;
   }
 
-  const [internships,count] = await Promise.all([
-    (await Internship.find(filter)).toSorted({createdAt : -1}),
-    Internship.countDocuments(filter)
-  ]);
+  const internships = await Internship
+    .find(filter)
+    .sort({ createdAt: -1 });
+
+  const count = await Internship.countDocuments(filter);
+
   return {
-    internships,
-    count
+    count,
+    internships
+  };
+};
+
+//Service function for increament view count
+export const incrementViewCountService = async (internshipId) => {
+  const internship = await Internship.findByIdAndUpdate(
+    internshipId,
+    { $inc: { viewCount: 1 } },// Increment view count by 1
+    { new: true }
+  );
+
+  if (!internship) {
+    throw new Error("Internship not found");
+  }
+
+  return internship;
+};
+
+//Dashboard Stats
+export const getDashboardStatsService = async (organizationId) => {
+  const totalInternships = await Internship.countDocuments({
+    organizationId,
+  });
+
+  const activeInternships = await Internship.countDocuments({
+    organizationId,
+    status: "Active",
+  });
+
+  const closedInternships = await Internship.countDocuments({
+    organizationId,
+    status: "Closed",
+  });
+
+  const internships = await Internship.find({ organizationId });
+
+  const totalViews = internships.reduce(
+    (sum, internship) => sum + internship.viewCount,
+    0
+  );
+
+  const totalApplicants = internships.reduce(
+    (sum, internship) => sum + internship.totalApplicants,
+    0
+  );
+
+  const acceptedCount = internships.reduce(
+    (sum, internship) => sum + internship.acceptedCount,
+    0
+  );
+
+  const acceptanceRate =
+    totalApplicants > 0
+      ? ((acceptedCount / totalApplicants) * 100).toFixed(2)
+      : 0;
+
+  return {
+    totalInternships,
+    activeInternships,
+    closedInternships,
+    totalViews,
+    totalApplicants,
+    acceptanceRate,
   };
 };
