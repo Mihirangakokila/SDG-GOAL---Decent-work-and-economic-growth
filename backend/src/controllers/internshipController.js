@@ -10,11 +10,13 @@ import {
 } from "../services/internshipService.js";
 
 // Controller to handle internship creation
+// Requires: Authentication (protect middleware) and organization role
+// The req.user.id is the authenticated organization's User ID
 export const createInternshipController = async (req, res) => {
   try{
     const internship = await createInternship(
       req.body,
-      req.user.id // Assuming req.user is set by authentication middleware
+      req.user._id // Using authenticated organization's User ID
     );
     res.status(201).json(internship);
   } catch(error){
@@ -24,12 +26,13 @@ export const createInternshipController = async (req, res) => {
   };
 
   // Controller to handle internship update
+  // Requires: Authentication (protect middleware) and organization role
 export const updateInternshipController = async (req, res) => {
   try{  
     const internship = await updateInternship(
       req.body,
       req.params.id,
-      req.user.id,
+      req.user._id,
     );  
 
     res.json(internship);
@@ -39,11 +42,12 @@ export const updateInternshipController = async (req, res) => {
 };
 
 // Controller to handle internship deletion
+// Requires: Authentication (protect middleware) and organization role
 export const deleteInternshipController = async (req, res) => {
   try{
     const internship = await deleteInternship(
       req.params.id,
-      req.user.id
+      req.user._id
     );  
     res.json({message : "Internship deleted successfully"});
   } catch(error){
@@ -61,13 +65,13 @@ export const getInternshipByIdController = async (req, res) => {
   }
 };
 
-//Get My Internships (Organization)
+// Requires: Authentication (protect middleware) and organization role
 export const getMyInternships  = async (req, res) => {
   try {
 
     const {status} = req.query;
 
-    const result = await getMyInternshipsService(req.user.id,status);
+    const result = await getMyInternshipsService(req.user._id, status);
 
     res.json(result);
   }
@@ -94,11 +98,11 @@ export const incrementViewCountController = async (req, res) => {
   }   
 };
 
-// ✅ Dashboard Analytics
+// Requires: Authentication (protect middleware) and organization role
 export const getDashboardStats = async (req, res) => {
   try {
     const stats = await getDashboardStatsService(
-      req.user.id
+      req.user._id
     );
 
     res.json({
