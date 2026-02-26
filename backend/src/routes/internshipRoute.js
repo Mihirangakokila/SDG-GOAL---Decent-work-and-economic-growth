@@ -6,7 +6,8 @@ import {
   getInternshipByIdController,
   getMyInternships,
   incrementViewCountController,
-  getDashboardStats
+  getDashboardStats,
+  searchInternshipsController
 
 } from "../controllers/internshipController.js";
 
@@ -58,4 +59,6 @@ router.get(
   getDashboardStats
 );
 
+// Search internships
+router.get("/search", searchInternshipsController);
 export default router;

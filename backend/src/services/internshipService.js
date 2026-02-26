@@ -131,3 +131,68 @@ export const getDashboardStatsService = async (organizationId) => {
     acceptanceRate,
   };
 };
+
+//Search functionality for internships
+export const searchInternshipsService = async (queryParams) => {
+  const {
+    keyword,
+    skills,
+    education,
+    status,
+    location,
+    page = 1,
+    limit = 10,
+    sortBy = "createdAt",
+    order = "desc"
+  } = queryParams;
+
+  let filter = {};
+
+  // 🔎 Keyword search (title + description)
+  if (keyword) {
+    filter.$or = [
+      { tittle: { $regex: keyword, $options: "i" } },
+      { description: { $regex: keyword, $options: "i" } }
+    ];
+  }
+
+  // 🛠 Skills filter (comma separated)
+  if (skills) {
+    filter.requiredSkills = { $in: skills.split(",") };
+  }
+
+  // 🎓 Education filter
+  if (education) {
+    filter.requiredEducation = education;
+  }
+
+  // 📌 Status filter
+  if (status) {
+    filter.status = status;
+  }
+
+  // 📍 Location filter
+  if (location) {
+    filter.location = { $regex: location, $options: "i" };
+  }
+
+  // Pagination
+  const skip = (page - 1) * limit;
+
+  // Sorting
+  const sortOrder = order === "asc" ? 1 : -1;
+
+  const internships = await Internship.find(filter)
+    .sort({ [sortBy]: sortOrder })
+    .skip(skip)
+    .limit(parseInt(limit));
+
+  const total = await Internship.countDocuments(filter);
+
+  return {
+    total,
+    page: parseInt(page),
+    totalPages: Math.ceil(total / limit),
+    internships
+  };
+};

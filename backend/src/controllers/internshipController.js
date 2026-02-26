@@ -5,7 +5,8 @@ import {
   getInternshipByIdService,
   getMyInternshipsService,
   incrementViewCountService,
-  getDashboardStatsService
+  getDashboardStatsService,
+  searchInternshipsService
 } from "../services/internshipService.js";
 
 // Controller to handle internship creation
@@ -108,6 +109,24 @@ export const getDashboardStats = async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message,
+    });
+  }
+};
+
+//Search Internships
+export const searchInternshipsController = async (req, res) => {
+  try {
+    const result = await searchInternshipsService(req.query);
+
+    res.json({
+      success: true,
+      data: result
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
     });
   }
 };
