@@ -1,5 +1,5 @@
 import express from "express";
-import { protect, authorizeRoles } from "../middlewear/authMiddleware.js";
+import { protect, authorizeRoles } from "../middleware/authMiddleware.js";
 import {
   createProfile,
   getProfileByUserId,
