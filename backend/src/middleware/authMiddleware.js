@@ -44,8 +44,4 @@ export const authorizeRoles = (...allowedRoles) => {
 
     next();
   };
-<<<<<<< HEAD
 };
-=======
-};
->>>>>>> 92be4607cb51a4f989312801a582250f183951c4
