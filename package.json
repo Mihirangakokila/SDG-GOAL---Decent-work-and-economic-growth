@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "opencage-api-client": "^2.1.0"
+  }
+}
