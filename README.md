@@ -1,20 +1,11 @@
-<<<<<<< HEAD
 # SDG Goal - Decent Work and Economic Growth
 
 A platform connecting organizations with youth for internship opportunities. Built with Node.js, Express, MongoDB, and JWT authentication.
-=======
-# 🌍 SDG Goal - Decent Work and Economic Growth
-
-**BridgeRural: Connecting Organizations with Rural Youth for Internship Opportunities**
-
-A comprehensive platform that bridges the gap between organizations seeking talent and youth in rural or disadvantaged areas seeking internship opportunities. Built with a modern tech stack for scalability and performance.
->>>>>>> 92be4607cb51a4f989312801a582250f183951c4
 
 ---
 
 ## 📋 Table of Contents
 
-<<<<<<< HEAD
 - [Setup & Installation](#setup--installation)
 - [Environment Variables](#environment-variables)
 - [Authentication](#authentication)
@@ -67,7 +58,6 @@ MONGO_URI=mongodb://localhost:27017/sdg-goal
 PORT=5001
 JWT_SECRET=your_secret_key_here
 JWT_EXPIRES_IN=7d
-=======
 - [Project Overview](#project-overview)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
@@ -430,14 +420,12 @@ CORS_ORIGIN=http://localhost:3000
 ```env
 REACT_APP_API_BASE_URL=http://localhost:5001/api
 REACT_APP_ENV=development
->>>>>>> 92be4607cb51a4f989312801a582250f183951c4
 ```
 
 ---
 
 ## 🔑 Authentication
 
-<<<<<<< HEAD
 ### Getting a Token
 
 All protected routes require a Bearer token in the Authorization header.
@@ -492,7 +480,6 @@ POST /api/auth/login
 ```
 
 **Response (200):**
-=======
 ### Token Flow
 
 ```
@@ -530,16 +517,11 @@ curl -X POST http://localhost:5001/api/auth/login \
 ```
 
 **Response:**
->>>>>>> 92be4607cb51a4f989312801a582250f183951c4
 ```json
 {
   "message": "Logged in successfully",
   "user": {
-<<<<<<< HEAD
     "id": "65abc123def456",
-=======
-    "id": "65abc123",
->>>>>>> 92be4607cb51a4f989312801a582250f183951c4
     "name": "Tech Corp",
     "email": "admin@techcorp.com",
     "role": "organization"
@@ -548,7 +530,6 @@ curl -X POST http://localhost:5001/api/auth/login \
 }
 ```
 
-<<<<<<< HEAD
 ### Using Token in Requests
 
 #### Option 1: Bearer Token (Postman) - RECOMMENDED
@@ -569,18 +550,10 @@ Content-Type: application/json
 curl -X GET http://localhost:5001/api/auth/me \
   -H "Authorization: Bearer YOUR_TOKEN_HERE" \
   -H "Content-Type: application/json"
-=======
-#### 3. Use Token
-
-Add to request headers:
-```
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
->>>>>>> 92be4607cb51a4f989312801a582250f183951c4
 ```
 
 ---
 
-<<<<<<< HEAD
 ## 🗺️ API Routes
 
 ### Authentication Routes
@@ -778,81 +751,6 @@ Authentication: Required ✅
 4. Body tab → Select **raw** → **JSON**
 5. Paste:
 ```json
-=======
-## 📚 API Documentation
-
-### Base URL
-```
-http://localhost:5001/api
-```
-
-### Authentication Endpoints
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/auth/register` | ❌ | Register new user |
-| POST | `/auth/login` | ❌ | Login user |
-| GET | `/auth/me` | ✅ | Get current user |
-| PUT | `/auth/update` | ✅ | Update profile |
-| DELETE | `/auth/:id` | ✅ | Delete user |
-
-### Internship Endpoints
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/internships` | ✅ org | Create internship |
-| GET | `/internships/my-internships` | ✅ org | Get my internships |
-| GET | `/internships/:id` | ❌ | Get single internship |
-| PUT | `/internships/:id` | ✅ org | Update internship |
-| DELETE | `/internships/:id` | ✅ org | Delete internship |
-| GET | `/internships/dashboard/stats` | ✅ org | Get stats |
-| GET | `/internships/search` | ❌ | Search internships |
-
-### Youth Profile Endpoints
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/profile` | ✅ youth | Create profile |
-| GET | `/profile/:userId` | ✅ | Get profile |
-| GET | `/profiles` | ✅ | Get all profiles |
-| PUT | `/profile/:userId` | ✅ | Update profile |
-| POST | `/profile/:userId/upload-cv` | ✅ | Upload CV |
-| DELETE | `/profile/:userId` | ✅ | Delete profile |
-
-### Organization Endpoints
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/organizations` | ✅ org | Create org profile |
-| GET | `/organizations/:id` | ✅ | Get org profile |
-| GET | `/organizations` | ✅ | Get all organizations |
-| PUT | `/organizations/:id` | ✅ | Update org profile |
-| POST | `/organizations/:id/documents` | ✅ | Upload documents |
-| DELETE | `/organizations/:id` | ✅ | Delete org profile |
-
----
-
-## 🧪 Testing Guide
-
-### Using Postman
-
-#### 1. Create Collection
-
-1. Open Postman
-2. Create new collection: "SDG-Goal"
-3. Create environment: "Development"
-4. Add variables:
-   - `base_url`: `http://localhost:5001/api`
-   - `token`: (leave empty)
-
-#### 2. Test Sequence
-
-**Register Organization:**
-```
-POST {{base_url}}/auth/register
-
-Body:
->>>>>>> 92be4607cb51a4f989312801a582250f183951c4
 {
   "name": "Tech Corp",
   "email": "admin@techcorp.com",
@@ -860,7 +758,6 @@ Body:
   "role": "organization"
 }
 ```
-<<<<<<< HEAD
 6. Click **Send**
 
 **Expected Response (201):**
@@ -905,33 +802,10 @@ Now use `{{token}}` in Authorization header
   "requiredSkills": ["JavaScript", "React", "Node.js", "MongoDB"],
   "requiredEducation": "Bachelor in Computer Science",
   "location": "Bangalore, India",
-=======
-
-**Tests Tab (Save token):**
-```javascript
-var jsonData = pm.response.json();
-pm.environment.set("token", jsonData.token);
-```
-
-**Create Internship:**
-```
-POST {{base_url}}/internships
-
-Headers:
-Authorization: Bearer {{token}}
-
-Body:
-{
-  "tittle": "Full Stack Developer",
-  "description": "Learn MERN stack",
-  "requiredSkills": ["JavaScript", "React", "Node.js"],
-  "location": "Bangalore",
->>>>>>> 92be4607cb51a4f989312801a582250f183951c4
   "duration": "3 months",
   "status": "Active"
 }
 ```
-<<<<<<< HEAD
 7. Click **Send**
 
 **Expected Response (201):**
@@ -970,20 +844,10 @@ Body:
     }
   ]
 }
-=======
-
-**Get My Internships:**
-```
-GET {{base_url}}/internships/my-internships
-
-Headers:
-Authorization: Bearer {{token}}
->>>>>>> 92be4607cb51a4f989312801a582250f183951c4
 ```
 
 ---
 
-<<<<<<< HEAD
 ### STEP 5: Get Single Internship (Public View)
 
 **In Postman:**
@@ -1123,58 +987,10 @@ backend/src/
     ├── internshipService.js
     ├── organizationService.js
     └── profileService.js
-=======
-## 📁 Project Structure
-
-```
-SDG-GOAL---Decent-work-and-economic-growth/
-├── backend/
-│   ├── src/
-│   │   ├── controllers/
-│   │   │   ├── authController.js
-│   │   │   ├── internshipController.js
-│   │   │   ├── organizationController.js
-│   │   │   └── profileController.js
-│   │   ├── middleware/
-│   │   │   ├── authMiddleware.js
-│   │   │   └── roleMiddleware.js
-│   │   ├── models/
-│   │   │   ├── User.js
-│   │   │   ├── internship.js
-│   │   │   ├── OrganizationProfile.js
-│   │   │   └── YouthProfile.js
-│   │   ├── routes/
-│   │   │   ├── auth.js
-│   │   │   ├── internshipRoute.js
-│   │   │   ├── organizationRoutes.js
-│   │   │   └── profile.js
-│   │   └── services/
-│   │       ├── internshipService.js
-│   │       ├── organizationService.js
-│   │       └── profileService.js
-│   ├── server.js
-│   ├── package.json
-│   └── .env
-│
-├── frontend/ (To be created)
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── services/
-│   │   ├── context/
-│   │   ├── App.js
-│   │   └── index.js
-│   ├── package.json
-│   └── .env
-│
-├── README.md
-└── .gitignore
->>>>>>> 92be4607cb51a4f989312801a582250f183951c4
 ```
 
 ---
 
-<<<<<<< HEAD
 ## 🎯 Quick Reference
 
 **Base URL:** `http://localhost:5001`
@@ -1198,193 +1014,3 @@ MIT License
 ## 📧 Support
 
 For issues or questions, contact the development team.
-=======
-## 🐛 Troubleshooting
-
-### MongoDB Connection Issues
-
-**Error:** `ENOTFOUND _mongodb._tcp.cluster0...`
-
-**Solutions:**
-1. Add IP to Atlas whitelist (0.0.0.0/0)
-2. Verify MONGO_URI in .env
-3. Check internet connection
-4. Ensure credentials are correct
-
-### JWT Token Issues
-
-**Error:** `Token is not valid`
-
-**Solutions:**
-1. Token might be expired (7 days)
-2. Re-login to get new token
-3. Check JWT_SECRET matches in .env
-4. Verify token format: `Bearer YOUR_TOKEN`
-
-### Port Already in Use
-
-**Error:** `EADDRINUSE: address already in use :::5001`
-
-**Solutions:**
-```bash
-# Kill process on port 5001 (Windows)
-netstat -ano | findstr :5001
-taskkill /PID <PID> /F
-
-# Or change PORT in .env
-PORT=5002
-```
-
-### CORS Issues (Frontend-Backend)
-
-**Error:** `Access to XMLHttpRequest has been blocked by CORS policy`
-
-**Solutions:**
-1. Add CORS to backend (install cors package):
-```javascript
-import cors from 'cors';
-app.use(cors({
-  origin: 'http://localhost:3000'
-}));
-```
-
-2. Verify API URL matches in frontend .env
-
----
-
-## 🔄 Deployment Checklist
-
-### Backend Deployment (Heroku/Render)
-
-- [ ] Create account on Heroku/Render
-- [ ] Connect GitHub repository
-- [ ] Set environment variables in platform
-- [ ] Deploy branch
-- [ ] Test API endpoints
-
-### Frontend Deployment (Vercel/Netlify)
-
-- [ ] Build frontend: `npm run build`
-- [ ] Deploy to Vercel/Netlify
-- [ ] Update API_BASE_URL to production backend
-- [ ] Test all features
-
----
-
-## 📝 Git Workflow
-
-### Cloning with Branches
-
-```bash
-# Clone repository
-git clone https://github.com/your-repo/SDG-GOAL.git
-
-# List branches
-git branch -a
-
-# Checkout auth_internship branch
-git checkout auth_internship
-
-# Or create new feature branch
-git checkout -b feature/your-feature-name
-
-# Make changes
-git add .
-git commit -m "Add feature: your description"
-git push origin feature/your-feature-name
-
-# Create Pull Request on GitHub
-```
-
----
-
-## 👥 User Roles
-
-### 1. **Youth** (`role: "youth"`)
-- Can create profile
-- Can search internships
-- Can apply for internships
-- Can view own profile
-
-### 2. **Organization** (`role: "organization"`)
-- Can create organization profile
-- Can post internships
-- Can manage internships
-- Can view applications
-- Can track dashboard stats
-
-### 3. **Admin** (`role: "admin"`)
-- Can manage all users
-- Can verify organizations
-- Can monitor platform
-- Can delete content
-- Can view all profiles
-
----
-
-## 🎓 Learning Resources
-
-- **Node.js:** https://nodejs.org/en/docs/
-- **Express:** https://expressjs.com/en/4x/api.html
-- **MongoDB:** https://docs.mongodb.com/
-- **JWT:** https://jwt.io/
-- **React:** https://react.dev/learn
-
----
-
-## 📞 Support & Contact
-
-For issues or questions:
-- Open a GitHub issue
-- Contact development team
-- Check documentation in README
-
----
-
-## 📄 License
-
-MIT License - Free to use and modify
-
----
-
-## ✅ Quick Reference Commands
-
-```bash
-# Backend
-cd backend
-npm install          # Install dependencies
-npm start            # Start server (port 5001)
-npm run dev          # Start with nodemon
-
-# Frontend
-cd frontend
-npm install          # Install dependencies
-npm start            # Start app (port 3000)
-npm run build        # Build for production
-npm test             # Run tests
-
-# Git
-git status           # Check status
-git add .            # Stage changes
-git commit -m "msg"  # Commit
-git push             # Push to remote
-git pull             # Pull from remote
-```
-
----
-
-## 🚀 Next Steps
-
-1. **Clone the repository**
-2. **Setup backend** → Run on port 5001
-3. **Test API** → Use Postman
-4. **Setup frontend** → Create React app
-5. **Connect frontend** → Update API URLs
-6. **Deploy** → Host on cloud
-
----
-
-**Happy Coding! 🎉**
-
-*SDG Goal 8: Decent Work and Economic Growth*
->>>>>>> 92be4607cb51a4f989312801a582250f183951c4
