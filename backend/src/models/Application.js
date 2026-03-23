@@ -13,7 +13,6 @@ const applicationSchema = new mongoose.Schema({
     required: true,
   },
 
-  // 🔹 Snapshot of applicant info (important)
   name: {
     type: String,
     required: true,
@@ -36,6 +35,11 @@ const applicationSchema = new mongoose.Schema({
   cvUrl: {
     type: String,
     required: true,
+  },
+
+  // 🔥 ADD THIS
+  cvText: {
+    type: String,
   },
 
   eligibilityScore: {
@@ -68,13 +72,11 @@ const applicationSchema = new mongoose.Schema({
     default: Date.now,
   },
 }, {
-  timestamps: false, // you are manually controlling dates
+  timestamps: false,
 });
 
-// Prevent duplicate applications
 applicationSchema.index({ youthId: 1, internshipId: 1 }, { unique: true });
 
-// Auto update updatedDate
 applicationSchema.pre('save', function () {
   this.updatedDate = Date.now();
 });

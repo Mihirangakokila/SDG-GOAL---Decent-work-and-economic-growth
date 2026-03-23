@@ -6,7 +6,7 @@ const storage = new CloudinaryStorage({
   cloudinary,
   params: {
     folder: 'internship_cvs',
-    resource_type: 'auto', // ✅ auto detects PDF and serves proper MIME
+    resource_type: 'raw', // ✅ auto detects PDF and serves proper MIME
     attachment: true,
     
   },

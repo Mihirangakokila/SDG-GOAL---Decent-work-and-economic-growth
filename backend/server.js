@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 // Import routes
 import applicationRoutes from './src/routes/applicationRoutes.js';
 
+
 //load environment variables
 dotenv.config();
 
@@ -14,6 +15,7 @@ const app = express();
 //middleware to parse JSON bodies
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
 
 //connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)

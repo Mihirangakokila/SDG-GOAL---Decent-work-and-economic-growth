@@ -2,48 +2,100 @@ import Application from '../models/Application.js';
 import Internship from '../models/Internship.js';
 import User from '../models/User.js';
 import { calculateEligibilityScore } from '../services/matchingService.js';
+import { PDFParse } from 'pdf-parse';
 
 
 
 // POST /api/applications/apply/:internshipId
 export const applyForInternship = async (req, res) => {
   try {
-    console.log('BODY:', req.body);
-    console.log('FILE:', req.file);
-
     const { youthId, name, email, phoneNumber } = req.body;
     const { internshipId } = req.params;
 
-    if (!youthId) return res.status(400).json({ message: 'youthId is required' });
-    if (!name || !email || !phoneNumber)
-      return res.status(400).json({ message: 'Name, email and phone number are required' });
+    if (!youthId) {
+      return res.status(400).json({ message: 'youthId is required' });
+    }
 
-    if (!req.file)
-      return res.status(400).json({ message: 'CV upload is required (PDF only)' });
+    if (!name || !email || !phoneNumber) {
+      return res.status(400).json({
+        message: 'Name, email and phone number are required'
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        message: 'CV upload is required (PDF only)'
+      });
+    }
 
     const cvUrl = req.file.path;
 
-    // internship check
+    // ✅ FIX: declare variable correctly
+    let extractedText = '';
+
+    try {
+      const response = await fetch(cvUrl);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch PDF: ${response.status}`);
+      }
+
+      const buffer = Buffer.from(await response.arrayBuffer());
+
+      const parser = new PDFParse({ data: buffer });
+      const result = await parser.getText();
+      extractedText = result.text || '';
+
+      console.log('EXTRACTED TEXT LENGTH:', extractedText.length);
+      console.log('EXTRACTED TEXT:', extractedText);
+
+    } catch (err) {
+      console.error('PDF extraction failed:', err.message);
+    }
+
+    // Internship validation
     const internship = await Internship.findById(internshipId);
-    if (!internship) return res.status(404).json({ message: 'Internship not found' });
-    if (internship.status !== 'active')
-      return res.status(400).json({ message: 'This internship is not active' });
+    if (!internship) {
+      return res.status(404).json({ message: 'Internship not found' });
+    }
 
-    // duplicate check
-    const existingApplication = await Application.findOne({ youthId, internshipId });
-    if (existingApplication)
-      return res.status(400).json({ message: 'You have already applied' });
+    if (internship.status !== 'active') {
+      return res.status(400).json({
+        message: 'This internship is not active'
+      });
+    }
 
+    // Duplicate check
+    const existingApplication = await Application.findOne({
+      youthId,
+      internshipId
+    });
+
+    if (existingApplication) {
+      return res.status(400).json({
+        message: 'You have already applied'
+      });
+    }
+
+    // User validation
     const youth = await User.findById(youthId);
-    if (!youth) return res.status(404).json({ message: 'Youth not found' });
-    if (youth.role !== 'youth')
-      return res.status(400).json({ message: 'User is not youth' });
+    if (!youth) {
+      return res.status(404).json({ message: 'Youth not found' });
+    }
 
+    if (youth.role !== 'youth') {
+      return res.status(400).json({
+        message: 'User is not youth'
+      });
+    }
+
+    // Score calculation
     const score = calculateEligibilityScore(
       youth.profile,
       internship.requirements
     );
 
+    // ✅ CREATE APPLICATION
     const application = await Application.create({
       youthId,
       internshipId,
@@ -51,11 +103,13 @@ export const applyForInternship = async (req, res) => {
       email,
       phoneNumber,
       cvUrl,
+      //cvText: extractedText,
       eligibilityScore: score.total,
       scoreBreakdown: score.breakdown,
       status: 'Applied'
     });
 
+    // Increment applicant count
     await Internship.findByIdAndUpdate(internshipId, {
       $inc: { applicantCount: 1 }
     });
