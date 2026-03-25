@@ -2,9 +2,7 @@ import Application from '../models/Application.js';
 import Internship from '../models/Internship.js';
 import User from '../models/User.js';
 import { calculateEligibilityScore } from '../services/matchingService.js';
-import { PDFParse } from 'pdf-parse';
-
-
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 // POST /api/applications/apply/:internshipId
 export const applyForInternship = async (req, res) => {
@@ -30,7 +28,7 @@ export const applyForInternship = async (req, res) => {
 
     const cvUrl = req.file.path;
 
-    // ✅ FIX: declare variable correctly
+    // Extract text from the uploaded PDF
     let extractedText = '';
 
     try {
@@ -40,14 +38,26 @@ export const applyForInternship = async (req, res) => {
         throw new Error(`Failed to fetch PDF: ${response.status}`);
       }
 
-      const buffer = Buffer.from(await response.arrayBuffer());
+      const buffer = await response.arrayBuffer();
+      const uint8Array = new Uint8Array(buffer);
+      const pdf = await pdfjsLib.getDocument({ data: uint8Array }).promise;
 
-      const parser = new PDFParse({ data: buffer });
-      const result = await parser.getText();
-      extractedText = result.text || '';
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(' ');
+        extractedText += pageText + ' ';
+      }
+
+      // Validate extracted text
+      const trimmedText = extractedText.trim();
+      if (trimmedText.length < 100) {
+        console.warn('⚠️ Extracted text too short or empty');
+        extractedText = ''; // Set to empty to trigger 0 score
+      }
 
       console.log('EXTRACTED TEXT LENGTH:', extractedText.length);
-      console.log('EXTRACTED TEXT:', extractedText);
+      console.log('EXTRACTED TEXT (first 500 chars):', extractedText.substring(0, 500));
 
     } catch (err) {
       console.error('PDF extraction failed:', err.message);
@@ -90,9 +100,10 @@ export const applyForInternship = async (req, res) => {
     }
 
     // Score calculation
-    const score = calculateEligibilityScore(
+    const score = await calculateEligibilityScore(
       youth.profile,
-      internship.requirements
+      internship.requirements,
+      extractedText
     );
 
     // ✅ CREATE APPLICATION
@@ -103,9 +114,10 @@ export const applyForInternship = async (req, res) => {
       email,
       phoneNumber,
       cvUrl,
-      //cvText: extractedText,
+      cvText: extractedText,
       eligibilityScore: score.total,
       scoreBreakdown: score.breakdown,
+      aiReasoning: score.aiReasoning || '',
       status: 'Applied'
     });
 
@@ -124,7 +136,6 @@ export const applyForInternship = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 export const updateApplication = async (req, res) => {
   try {
@@ -254,8 +265,8 @@ export const withdrawApplication = async (req, res) => {
     }
 
     if (application.status !== 'Applied') {
-      return res.status(400).json({ 
-        message: `Cannot withdraw application with status: ${application.status}` 
+      return res.status(400).json({
+        message: `Cannot withdraw application with status: ${application.status}`
       });
     }
 

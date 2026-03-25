@@ -56,6 +56,11 @@ const applicationSchema = new mongoose.Schema({
     priorityBoost: { type: Number, default: 0 },
   },
 
+  aiReasoning: {
+    type: String,
+    default: '',
+  },
+
   status: {
     type: String,
     enum: ['Applied', 'Under Review', 'Accepted', 'Rejected'],

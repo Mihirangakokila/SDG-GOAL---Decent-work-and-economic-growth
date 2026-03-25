@@ -252,13 +252,18 @@ const seedDatabase = async () => {
             sampleApplications.push({
                 youthId: youth._id,
                 internshipId: internship._id,
+                name: youth.name,
+                email: youth.email,
+                phoneNumber: '9876543210',
+                cvUrl: 'https://example.com/sample-cv.pdf',
                 eligibilityScore: score,
                 scoreBreakdown: {
                     skillMatch: Math.floor(score * 0.4),
-                    educationMatch: Math.floor(score * 0.3),
-                    locationMatch: Math.floor(score * 0.2),
-                    priorityBoost: Math.floor(score * 0.1)
+                    educationMatch: Math.floor(score * 0.2),
+                    locationMatch: Math.floor(score * 0.1),
+                    priorityBoost: Math.floor(score * 0.3)
                 },
+                aiReasoning: 'Seed data — sample score',
                 status: ['Applied', 'Under Review', 'Applied'][i],
                 appliedDate: new Date(Date.now() - i * 24 * 60 * 60 * 1000) // Staggered dates
             });

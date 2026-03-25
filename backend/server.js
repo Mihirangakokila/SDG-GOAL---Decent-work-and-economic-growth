@@ -1,18 +1,19 @@
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+import cors from "cors";
+
+// Load environment variables FIRST, before importing other modules
+dotenv.config();
 
 // Import routes
 import applicationRoutes from './src/routes/applicationRoutes.js';
-
-
-//load environment variables
-dotenv.config();
 
 //create express app
 const app = express();
 
 //middleware to parse JSON bodies
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
