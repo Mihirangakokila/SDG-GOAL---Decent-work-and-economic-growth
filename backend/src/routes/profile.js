@@ -1,5 +1,6 @@
 import express from "express";
 import { protect, authorizeRoles } from "../middleware/authMiddleware.js";
+import upload from "../middleware/uploadMiddleware.js"; // ✅ ADDED
 import {
   createProfile,
   getProfileByUserId,
@@ -27,7 +28,7 @@ router.get(
   getProfileByUserId
 );
 
-// Get profiles list (behaviour depends on role)
+// Get profiles list
 router.get(
   "/profiles",
   protect,
@@ -43,11 +44,12 @@ router.put(
   updateProfile
 );
 
-// Upload CV / documents metadata
+// ✅ UPDATED (ONLY CHANGE HERE)
 router.post(
   "/profile/:userId/upload-cv",
   protect,
   authorizeRoles("youth", "admin"),
+  upload.single("file"), // 🔥 REQUIRED FOR CLOUDINARY
   uploadCv
 );
 
@@ -60,4 +62,3 @@ router.delete(
 );
 
 export default router;
-

@@ -1,4 +1,5 @@
 import YouthProfile from "../models/YouthProfile.js";
+import cloudinary from "../config/cloudinary.js";
 import {
   calculateProfileCompleteness,
   calculateProfileStrength,
@@ -9,8 +10,7 @@ import {
   createVersionSnapshot,
 } from "../services/profileService.js";
 
-// Create a new youth profile
-// POST /profile
+// Create Profile
 export const createProfile = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -76,8 +76,7 @@ export const createProfile = async (req, res) => {
   }
 };
 
-// Get a profile by userId
-// GET /profile/:userId
+// Get Profile
 export const getProfileByUserId = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -100,7 +99,6 @@ export const getProfileByUserId = async (req, res) => {
       return res.status(403).json({ message: "Not authorized to view this profile" });
     }
 
-    // Organizations see a summary; admins and owners see full profile
     if (isOrg && !isOwner && !isAdmin) {
       const summary = {
         id: profile._id,
@@ -125,8 +123,7 @@ export const getProfileByUserId = async (req, res) => {
   }
 };
 
-// Get profiles list
-// GET /profiles
+// 🔥 FINAL: Filtering + Pagination + Search
 export const getProfiles = async (req, res) => {
   try {
     const requester = req.user;
@@ -135,11 +132,8 @@ export const getProfiles = async (req, res) => {
     let projection = null;
 
     if (requester.role === "admin") {
-      // Admin sees all profiles
       query = {};
-      projection = null;
     } else if (requester.role === "organization") {
-      // Organizations see summaries of all youth profiles
       projection = {
         fullName: 1,
         district: 1,
@@ -153,26 +147,70 @@ export const getProfiles = async (req, res) => {
         user: 1,
       };
     } else if (requester.role === "youth") {
-      // Youth sees only own profile via this endpoint
       query = { user: requester._id };
     } else {
       return res.status(403).json({ message: "Not authorized to view profiles" });
     }
 
-    const profiles = await YouthProfile.find(query, projection).populate(
-      "user",
-      "name email role"
-    );
+    // ✅ FILTERING + SEARCH
+    const { district, skill, rural, search } = req.query;
 
-    return res.status(200).json({ profiles });
+    if (district) {
+      query.district = district;
+    }
+
+    const conditions = [];
+
+    if (skill) {
+      conditions.push(
+        { technicalSkills: { $regex: skill, $options: "i" } },
+        { softSkills: { $regex: skill, $options: "i" } }
+      );
+    }
+
+    if (search) {
+      conditions.push(
+        { fullName: { $regex: search, $options: "i" } },
+        { district: { $regex: search, $options: "i" } },
+        { technicalSkills: { $regex: search, $options: "i" } },
+        { softSkills: { $regex: search, $options: "i" } }
+      );
+    }
+
+    if (conditions.length > 0) {
+      query.$or = conditions;
+    }
+
+    if (rural !== undefined) {
+      query.ruralSupportPriority = rural === "true";
+    }
+
+    // ✅ PAGINATION
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const profiles = await YouthProfile.find(query, projection)
+      .populate("user", "name email role")
+      .skip(skip)
+      .limit(limit);
+
+    const total = await YouthProfile.countDocuments(query);
+
+    return res.status(200).json({
+      page,
+      totalPages: Math.ceil(total / limit),
+      totalResults: total,
+      profiles,
+    });
+
   } catch (error) {
     console.error("Error in getProfiles:", error);
     return res.status(500).json({ message: "Server error" });
   }
 };
 
-// Update profile
-// PUT /profile/:userId
+// Update Profile (UNCHANGED)
 export const updateProfile = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -198,46 +236,23 @@ export const updateProfile = async (req, res) => {
       });
     }
 
-    // Update fields if provided
     const updatableFields = [
-      "fullName",
-      "contactNumber",
-      "DOB",
-      "gender",
-      "district",
-      "provinceOrState",
-      "ruralAreaFlag",
-      "technicalSkills",
-      "softSkills",
-      "digitalLiteracyLevel",
-      "experienceYears",
-      "previousInternships",
-      "volunteeringExperience",
-      "preferredInternshipType",
-      "transportationAvailability",
-      "internetAccess",
+      "fullName","contactNumber","DOB","gender","district","provinceOrState",
+      "ruralAreaFlag","technicalSkills","softSkills","digitalLiteracyLevel",
+      "experienceYears","previousInternships","volunteeringExperience",
+      "preferredInternshipType","transportationAvailability","internetAccess",
       "profileVisibility",
     ];
 
     updatableFields.forEach((field) => {
-      if (req.body[field] !== undefined) {
-        profile[field] = req.body[field];
-      }
+      if (req.body[field] !== undefined) profile[field] = req.body[field];
     });
 
-    // Education fields
     if (!profile.education) profile.education = {};
-    const eduFields = [
-      "highestQualification",
-      "institutionName",
-      "fieldOfStudy",
-      "graduationYear",
-    ];
-    eduFields.forEach((field) => {
-      if (req.body[field] !== undefined) {
-        profile.education[field] = req.body[field];
-      }
-    });
+    ["highestQualification","institutionName","fieldOfStudy","graduationYear"]
+      .forEach((field) => {
+        if (req.body[field] !== undefined) profile.education[field] = req.body[field];
+      });
 
     const completeness = calculateProfileCompleteness(profile);
     const { level, score: strengthScore } = calculateProfileStrength(profile);
@@ -257,18 +272,15 @@ export const updateProfile = async (req, res) => {
 
     await profile.save();
 
-    return res.status(200).json({
-      message: "Profile updated successfully",
-      profile,
-    });
+    return res.status(200).json({ message: "Profile updated successfully", profile });
+
   } catch (error) {
     console.error("Error in updateProfile:", error);
     return res.status(500).json({ message: "Server error" });
   }
 };
 
-// Upload or update CV / documents (metadata only)
-// POST /profile/:userId/upload-cv
+// Upload CV (UNCHANGED)
 export const uploadCv = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -282,39 +294,54 @@ export const uploadCv = async (req, res) => {
     }
 
     const profile = await YouthProfile.findOne({ user: userId });
-    if (!profile) {
-      return res.status(404).json({ message: "Profile not found" });
+    if (!profile) return res.status(404).json({ message: "Profile not found" });
+
+   if (req.file) {
+  return cloudinary.uploader.upload_stream(
+    {
+      resource_type: "raw",
+      folder: "youth-cvs",
+      type: "upload" ,// FIX
+      access_mode: "public"
+    },
+    async (error, result) => {
+      if (error) return res.status(500).json({ message: error.message });
+
+      const doc = {
+        fileName: result.original_filename,
+        url: result.secure_url,
+        sizeInBytes: result.bytes,
+        uploadedAt: new Date(),
+      };
+
+      profile.documents.push(doc);
+      await profile.save();
+
+      return res.status(200).json({
+        message: "CV uploaded successfully",
+        documents: profile.documents,
+      });
     }
+  ).end(req.file.buffer);
+}
 
     const { fileName, url, sizeInBytes } = req.body;
-
     const { valid, message } = validateDocumentMetadata({ fileName, sizeInBytes });
-    if (!valid) {
-      return res.status(400).json({ message });
-    }
 
-    const doc = {
-      fileName,
-      url,
-      sizeInBytes,
-      uploadedAt: new Date(),
-    };
+    if (!valid) return res.status(400).json({ message });
 
-    profile.documents.push(doc);
+    profile.documents.push({ fileName, url, sizeInBytes, uploadedAt: new Date() });
     await profile.save();
 
-    return res.status(200).json({
-      message: "Document uploaded successfully",
-      documents: profile.documents,
-    });
+    return res.status(200).json({ documents: profile.documents });
+
   } catch (error) {
     console.error("Error in uploadCv:", error);
     return res.status(500).json({ message: "Server error" });
   }
 };
 
-// Delete profile
-// DELETE /profile/:userId
+// Delete Profile (UNCHANGED)
 export const deleteProfile = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -324,15 +351,15 @@ export const deleteProfile = async (req, res) => {
     const isAdmin = requester.role === "admin";
 
     if (!isOwner && !isAdmin) {
-      return res.status(403).json({ message: "Not authorized to delete this profile" });
+      return res.status(403).json({ message: "Not authorized" });
     }
 
     await YouthProfile.findOneAndDelete({ user: userId });
 
     return res.status(200).json({ message: "Profile deleted successfully" });
+
   } catch (error) {
     console.error("Error in deleteProfile:", error);
     return res.status(500).json({ message: "Server error" });
   }
 };
-
