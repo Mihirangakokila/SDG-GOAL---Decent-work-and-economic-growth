@@ -1,8 +1,48 @@
-
 import Internship from "../models/internship.js";
 import { getCoordinates } from "../utils/geocode.js";
+import {
+  sendInternshipPostedEmail,
+  sendInternshipClosedEmail,
+  sendInternshipUpdatedEmail,
+} from "../utils/emailService.js";
 
-// Service function to create a new internship
+// ─── Helper: fetch organization email + name from the User model ──────────────
+// We need the org's email to send notifications.
+// This assumes your Auth component's User model has { email, organizationName } fields.
+// Adjust the import path to wherever your User model lives in the project.
+import User from "../models/User.js";
+
+const getOrgDetails = async (organizationId) => {
+  try {
+    const user = await User.findById(organizationId).select("email organizationName name");
+    return {
+      email: user?.email ?? null,
+      name:  user?.organizationName ?? user?.name ?? "Organization",
+    };
+  } catch {
+    return { email: null, name: "Organization" };
+  }
+};
+
+// ─── Track which fields are being changed (for the update email) ──────────────
+const WATCHED_FIELDS = ["tittle", "description", "location", "duration", "requiredSkills", "status"];
+
+const detectChangedFields = (updateData) =>
+  WATCHED_FIELDS.filter((f) => updateData[f] !== undefined).map((f) => {
+    const labels = {
+      tittle:         "Title",
+      description:    "Description",
+      location:       "Location",
+      duration:       "Duration",
+      requiredSkills: "Required Skills",
+      status:         "Status",
+    };
+    return labels[f] ?? f;
+  });
+
+// ════════════════════════════════════════════════════════════════════════════════
+// CREATE
+// ════════════════════════════════════════════════════════════════════════════════
 export const createInternship = async (data, organizationId) => {
   let coordinates;
 
@@ -11,7 +51,7 @@ export const createInternship = async (data, organizationId) => {
     if (coords) {
       coordinates = {
         type: "Point",
-        coordinates: [coords.lng, coords.lat] // GeoJSON: lng first
+        coordinates: [coords.lng, coords.lat],
       };
     }
   }
@@ -19,32 +59,34 @@ export const createInternship = async (data, organizationId) => {
   const internship = await Internship.create({
     ...data,
     organizationId,
-    ...(coordinates && { coordinates }) // only add if geocoding succeeded
+    ...(coordinates && { coordinates }),
   });
+
+  // ── EMAIL: only send when status is Active (not Draft) ───────────────────────
+  if (internship.status === "Active") {
+    const org = await getOrgDetails(organizationId);
+    if (org.email) {
+      // Fire-and-forget — await so errors are caught silently inside sendEmail()
+      await sendInternshipPostedEmail(org.email, org.name, internship);
+    }
+  }
 
   return internship;
 };
 
-//without opencage integration
-// Service function to create a new internship
-/*export const createInternship = async (data, organizationId) => {
-  const internship = await Internship.create({
-    ...data,
-    organizationId,
-  });
-
-  return internship;
-};*/
-
-// Service function to update an existing internship
+// ════════════════════════════════════════════════════════════════════════════════
+// UPDATE
+// ════════════════════════════════════════════════════════════════════════════════
 export const updateInternship = async (data, internshipId, organizationId) => {
-  // Re-geocode only if location is being updated
+  // Fetch old document BEFORE update so we can detect status transitions
+  const oldInternship = await Internship.findOne({ _id: internshipId, organizationId });
+
   if (data.location) {
     const coords = await getCoordinates(data.location);
     if (coords) {
       data.coordinates = {
         type: "Point",
-        coordinates: [coords.lng, coords.lat]
+        coordinates: [coords.lng, coords.lat],
       };
     }
   }
@@ -55,112 +97,94 @@ export const updateInternship = async (data, internshipId, organizationId) => {
     { returnDocument: "after" }
   );
 
+  if (!internship) return internship;
+
+  const org = await getOrgDetails(organizationId);
+
+  if (org.email) {
+    const oldStatus = oldInternship?.status;
+    const newStatus = internship.status;
+
+    // ── EMAIL A: Draft/Active → Active (just published) ──────────────────────
+    if (oldStatus !== "Active" && newStatus === "Active") {
+      await sendInternshipPostedEmail(org.email, org.name, internship);
+    }
+    // ── EMAIL B: Active → Closed ──────────────────────────────────────────────
+    else if (oldStatus === "Active" && newStatus === "Closed") {
+      await sendInternshipClosedEmail(org.email, org.name, internship);
+    }
+    // ── EMAIL C: Any other meaningful field change (not just a status flip) ───
+    else {
+      const changedFields = detectChangedFields(data);
+      // Only send update email if something other than status changed
+      const nonStatusChanges = changedFields.filter((f) => f !== "Status");
+      if (nonStatusChanges.length > 0) {
+        await sendInternshipUpdatedEmail(org.email, org.name, internship, nonStatusChanges);
+      }
+    }
+  }
+
   return internship;
 };
 
-/*export const updateInternship = async (
-  data, 
-  internshipId,
-  organizationId
-) => {
-  const internship = await Internship.findOneAndUpdate(
-    {_id : internshipId, organizationId},
-    data,
-    {returnDocument: 'after'}
-  );
-  return internship;
-};**/
-
-//Service function to delete an internship
-export const deleteInternship = async (
-  internshipId,
-   organizationId
-  ) => {
-  const internship = await Internship.findOneAndDelete(
-    {_id : internshipId, organizationId}
-  );
+// ════════════════════════════════════════════════════════════════════════════════
+// DELETE  (no email needed — org initiated it themselves)
+// ════════════════════════════════════════════════════════════════════════════════
+export const deleteInternship = async (internshipId, organizationId) => {
+  const internship = await Internship.findOneAndDelete({ _id: internshipId, organizationId });
   return internship;
 };
 
-//Get Single Internship
+// ════════════════════════════════════════════════════════════════════════════════
+// GET SINGLE
+// ════════════════════════════════════════════════════════════════════════════════
 export const getInternshipByIdService = async (internshipId) => {
   const internship = await Internship.findById(internshipId);
-  
-  if (!internship) {
-    throw new Error("Internship not found");
-  }
-
+  if (!internship) throw new Error("Internship not found");
   return internship;
 };
 
-//Get All Internships
+// ════════════════════════════════════════════════════════════════════════════════
+// GET ALL (org's own)
+// ════════════════════════════════════════════════════════════════════════════════
 export const getMyInternshipsService = async (organizationId, status) => {
-
   const filter = { organizationId };
+  if (status) filter.status = status;
 
-  if (status) {
-    filter.status = status;
-  }
+  const internships = await Internship.find(filter).sort({ createdAt: -1 });
+  const count       = await Internship.countDocuments(filter);
 
-  const internships = await Internship
-    .find(filter)
-    .sort({ createdAt: -1 });
-
-  const count = await Internship.countDocuments(filter);
-
-  return {
-    count,
-    internships
-  };
+  return { count, internships };
 };
 
-//Service function for increament view count
+// ════════════════════════════════════════════════════════════════════════════════
+// INCREMENT VIEW COUNT
+// ════════════════════════════════════════════════════════════════════════════════
 export const incrementViewCountService = async (internshipId) => {
   const internship = await Internship.findByIdAndUpdate(
     internshipId,
-    { $inc: { viewCount: 1 } },// Increment view count by 1
+    { $inc: { viewCount: 1 } },
     { new: true }
   );
-
-  if (!internship) {
-    throw new Error("Internship not found");
-  }
-
+  if (!internship) throw new Error("Internship not found");
   return internship;
 };
 
-//Dashboard Stats
+// ════════════════════════════════════════════════════════════════════════════════
+// DASHBOARD STATS
+// ════════════════════════════════════════════════════════════════════════════════
 export const getDashboardStatsService = async (organizationId) => {
-  const totalInternships = await Internship.countDocuments({
-    organizationId,
-  });
-
-  const activeInternships = await Internship.countDocuments({
-    organizationId,
-    status: "Active",
-  });
-
-  const closedInternships = await Internship.countDocuments({
-    organizationId,
-    status: "Closed",
-  });
+  const totalInternships  = await Internship.countDocuments({ organizationId });
+  const activeInternships = await Internship.countDocuments({ organizationId, status: "Active"  });
+  const closedInternships = await Internship.countDocuments({ organizationId, status: "Closed"  });
 
   const internships = await Internship.find({ organizationId });
 
-  const totalViews = internships.reduce(
-    (sum, internship) => sum + internship.viewCount,
-    0
-  );
+  const totalViews = internships.reduce((sum, i) => sum + i.viewCount, 0);
 
-  const totalApplicants = internships.reduce(
-    (sum, internship) => sum + internship.totalApplicants,
-    0
-  );
-
-  const acceptedCount = internships.reduce(
-    (sum, internship) => sum + internship.acceptedCount,
-    0
-  );
+  // Fixed: use totalApplicants (capital A) — update schema field name to match
+  const totalApplicants = internships.reduce((sum, i) => sum + (i.totalApplicants ?? 0), 0);
+  const acceptedCount   = internships.reduce((sum, i) => sum + (i.acceptedCount    ?? 0), 0);
 
   const acceptanceRate =
     totalApplicants > 0
@@ -177,7 +201,9 @@ export const getDashboardStatsService = async (organizationId) => {
   };
 };
 
-//Search functionality for internships
+// ════════════════════════════════════════════════════════════════════════════════
+// SEARCH
+// ════════════════════════════════════════════════════════════════════════════════
 export const searchInternshipsService = async (queryParams) => {
   const {
     keyword,
@@ -185,62 +211,40 @@ export const searchInternshipsService = async (queryParams) => {
     education,
     status,
     location,
-    page = 1,
-    limit = 10,
-    sortBy = "createdAt",
-    order = "desc"
+    page    = 1,
+    limit   = 10,
+    sortBy  = "createdAt",
+    order   = "desc",
   } = queryParams;
 
-  let filter = {};
+  const filter = {};
 
-  // 🔎 Keyword search (title + description)
   if (keyword) {
     filter.$or = [
-      { tittle: { $regex: keyword, $options: "i" } },
-      { description: { $regex: keyword, $options: "i" } }
+      { tittle:      { $regex: keyword, $options: "i" } },
+      { description: { $regex: keyword, $options: "i" } },
     ];
   }
 
-  // 🛠 Skills filter (comma separated)
-  if (skills) {
-    filter.requiredSkills = { $in: skills.split(",") };
+  if (skills)    filter.requiredSkills    = { $in: skills.split(",") };
+  if (education) filter.requiredEducation = education;
+  if (status)    filter.status            = status;
+
+  if (location) {
+    const coords = await getCoordinates(location);
+    if (coords) {
+      const radiusInRadians = 50 / 6378.1;
+      filter.coordinates = {
+        $geoWithin: {
+          $centerSphere: [[coords.lng, coords.lat], radiusInRadians],
+        },
+      };
+    } else {
+      filter.location = { $regex: location, $options: "i" };
+    }
   }
 
-  // 🎓 Education filter
-  if (education) {
-    filter.requiredEducation = education;
-  }
-
-  // 📌 Status filter
-  if (status) {
-    filter.status = status;
-  }
-
-// 📍 Location filter — using $geoWithin instead of $near
-if (location) {
-  const coords = await getCoordinates(location);
-
-  if (coords) {
-    const radiusInRadians = 50 / 6378.1; // 50km converted to radians
-
-    filter.coordinates = {
-      $geoWithin: {
-        $centerSphere: [
-          [coords.lng, coords.lat], // [longitude, latitude]
-          radiusInRadians
-        ]
-      }
-    };
-  } else {
-    // Fallback → plain text match if geocoding fails
-    filter.location = { $regex: location, $options: "i" };
-  }
-}
-
-  // Pagination
-  const skip = (page - 1) * limit;
-
-  // Sorting
+  const skip      = (page - 1) * limit;
   const sortOrder = order === "asc" ? 1 : -1;
 
   const internships = await Internship.find(filter)
@@ -252,8 +256,8 @@ if (location) {
 
   return {
     total,
-    page: parseInt(page),
+    page:       parseInt(page),
     totalPages: Math.ceil(total / limit),
-    internships
+    internships,
   };
 };
