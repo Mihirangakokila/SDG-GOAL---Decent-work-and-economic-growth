@@ -1,5 +1,5 @@
 import Application from '../models/Application.js';
-import Internship from '../models/Internship.js';
+import Internship from '../models/internship.js';
 import User from '../models/User.js';
 import { calculateEligibilityScore } from '../services/matchingService.js';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';

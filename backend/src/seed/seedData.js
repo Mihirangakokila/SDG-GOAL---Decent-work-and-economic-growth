@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import User from '../models/User.js';
-import Internship from '../models/Internship.js';
+import Internship from '../models/internship.js';
 import Application from '../models/Application.js';
 import bcrypt from 'bcryptjs';
 
