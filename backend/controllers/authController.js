@@ -1,98 +1,103 @@
+// authController.js
+import User from '../models/userModel.js'; // Mongoose User model
 import jwt from 'jsonwebtoken';
-import User from '../models/userModel.js';
 
-const generateToken = (user) =>
-  jwt.sign(
-    {
-      id: user._id,
-      role: user.role,
-    },
-    process.env.JWT_SECRET,
-    {
-      expiresIn: '7d',
-    }
+// Helper: generate JWT
+const generateToken = (user) => {
+  return jwt.sign(
+    { id: user._id, role: user.role },
+    process.env.JWT_SECRET || 'secretkey',
+    { expiresIn: '1d' }
   );
+};
 
-export const registerUser = async (req, res) => {
+// ================================
+// Register user (youth or organization)
+// ================================
+export const register = async (req, res) => {
   try {
     const { name, email, password, role, skills } = req.body;
 
-    if (!name || !email || !password) {
-      res.status(400).json({ message: 'Name, email and password are required' });
-      return;
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    const existing = await User.findOne({ email });
-    if (existing) {
-      res.status(400).json({ message: 'User already exists with this email' });
-      return;
+    // Check if user exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists' });
     }
 
+    // Create user
     const user = await User.create({
       name,
       email,
       password,
-      role: role || 'youth',
+      role,
       skills: skills || [],
     });
 
-    const token = generateToken(user);
-
     res.status(201).json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      skills: user.skills,
-      token,
+      message: 'User registered successfully',
+      token: generateToken(user),
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        skills: user.skills,
+      },
     });
-  } catch (error) {
-    res.status(500).json({ message: 'Registration failed', error: error.message });
+  } catch (err) {
+    res.status(500).json({ message: 'Registration failed', error: err.message });
   }
 };
 
-export const loginUser = async (req, res) => {
+// ================================
+// Login user
+// ================================
+export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      res.status(400).json({ message: 'Email and password are required' });
-      return;
+      return res.status(400).json({ message: 'Email and password required' });
     }
 
     const user = await User.findOne({ email });
     if (!user) {
-      res.status(401).json({ message: 'Invalid credentials' });
-      return;
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
-      res.status(401).json({ message: 'Invalid credentials' });
-      return;
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    const token = generateToken(user);
-
-    res.json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      skills: user.skills,
-      token,
+    res.status(200).json({
+      message: 'Login successful',
+      token: generateToken(user),
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        skills: user.skills,
+      },
     });
-  } catch (error) {
-    res.status(500).json({ message: 'Login failed', error: error.message });
+  } catch (err) {
+    res.status(500).json({ message: 'Login failed', error: err.message });
   }
 };
 
-export const getProfile = async (req, res) => {
-  if (!req.user) {
-    res.status(401).json({ message: 'Not authenticated' });
-    return;
+// ================================
+// Get current user profile
+// ================================
+export const getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    res.status(200).json(user);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to load profile', error: err.message });
   }
-
-  res.json(req.user);
 };
-

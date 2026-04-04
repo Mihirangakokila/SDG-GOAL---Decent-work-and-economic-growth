@@ -1,3 +1,4 @@
+// trainingRoutes.js
 import express from 'express';
 import {
   createTraining,
@@ -13,7 +14,11 @@ import { authorizeRoles } from '../middleware/roleMiddleware.js';
 
 const router = express.Router();
 
-// Admin / Organization only
+// ================================
+// Admin / Organization only routes
+// ================================
+
+// Create a new training
 router.post(
   '/',
   protect,
@@ -21,10 +26,7 @@ router.post(
   createTraining
 );
 
-// Youth: view active trainings with filters
-router.get('/', protect, getActiveTrainings);
-
-// Admin / Organization: view all trainings
+// Get all trainings (Admin/Organization)
 router.get(
   '/all',
   protect,
@@ -32,7 +34,30 @@ router.get(
   getAllTrainings
 );
 
-// Recommendations based on youth skills
+// Update training by ID
+router.put(
+  '/:id',
+  protect,
+  authorizeRoles('admin', 'organization'),
+  updateTraining
+);
+
+// Soft delete training by ID
+router.delete(
+  '/:id',
+  protect,
+  authorizeRoles('admin', 'organization'),
+  softDeleteTraining
+);
+
+// ================================
+// Youth routes
+// ================================
+
+// Get active trainings with optional filters
+router.get('/', protect, authorizeRoles('youth', 'admin', 'organization'), getActiveTrainings);
+
+// Get recommended trainings for youth
 router.get(
   '/recommendations',
   protect,
@@ -41,23 +66,7 @@ router.get(
 );
 
 // Get single training details
-router.get('/:id', protect, getTrainingById);
+router.get('/:id', protect, authorizeRoles('youth', 'admin', 'organization'), getTrainingById);
 
-// Update training
-router.put(
-  '/:id',
-  protect,
-  authorizeRoles('admin', 'organization'),
-  updateTraining
-);
-
-// Soft delete training (set status = Inactive)
-router.delete(
-  '/:id',
-  protect,
-  authorizeRoles('admin', 'organization'),
-  softDeleteTraining
-);
-
+// Export router
 export default router;
-
