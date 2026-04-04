@@ -1,0 +1,5 @@
+describe("smoke", () => {
+  it("jest runs", () => {
+    expect(1 + 1).toBe(2);
+  });
+});
