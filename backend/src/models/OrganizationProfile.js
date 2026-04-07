@@ -67,7 +67,7 @@ const organizationProfileSchema = new mongoose.Schema(
   }
 );
 
-const OrganizationProfile = mongoose.model(
+const OrganizationProfile = mongoose.models.OrganizationProfile || mongoose.model(
   "OrganizationProfile",
   organizationProfileSchema
 );

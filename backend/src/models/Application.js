@@ -86,4 +86,4 @@ applicationSchema.pre('save', function () {
   this.updatedDate = Date.now();
 });
 
-export default mongoose.model('Application', applicationSchema);
+export default mongoose.models.Application || mongoose.model('Application', applicationSchema);

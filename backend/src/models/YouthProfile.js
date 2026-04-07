@@ -101,6 +101,6 @@ const youthProfileSchema = new mongoose.Schema(
   }
 );
 
-const YouthProfile = mongoose.model("YouthProfile", youthProfileSchema);
+const YouthProfile = mongoose.models.YouthProfile || mongoose.model("YouthProfile", youthProfileSchema);
 
 export default YouthProfile;
