@@ -1,6 +1,6 @@
 import cron from "node-cron";
 import User from "../models/User.js";
-import Internship from "../models/internship.js";
+import Internship from "../models/Internship.js";
 import { sendWeeklySummaryEmail } from "../utils/emailService.js";
 
 /**

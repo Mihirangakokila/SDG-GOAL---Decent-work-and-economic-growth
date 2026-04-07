@@ -1,4 +1,5 @@
 import OrganizationProfile from "../models/OrganizationProfile.js";
+import cloudinary from "../config/cloudinary.js";
 import {
   calculateOrgProfileCompleteness,
   determineReadinessStatus,
@@ -9,6 +10,7 @@ import {
 } from "../services/organizationService.js";
 
 // POST /organizations
+// CREATE ORGANIZATION PROFILE
 export const createOrganizationProfile = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -37,8 +39,12 @@ export const createOrganizationProfile = async (req, res) => {
 
     const completeness = calculateOrgProfileCompleteness(payload);
     const verified = false;
+
     const readinessStatus = determineReadinessStatus(completeness, verified);
-    const canPostInternship = determineCanPostInternship(readinessStatus, verified);
+    const canPostInternship = determineCanPostInternship(
+      readinessStatus,
+      verified
+    );
     const readinessSuggestions = buildReadinessSuggestions(
       payload,
       completeness,
@@ -64,6 +70,7 @@ export const createOrganizationProfile = async (req, res) => {
 };
 
 // GET /organizations/:id
+// GET SINGLE ORGANIZATION
 export const getOrganizationProfileById = async (req, res) => {
   try {
     const { id } = req.params;
