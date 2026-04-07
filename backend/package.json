@@ -2,7 +2,6 @@
   "name": "backend",
   "version": "1.0.0",
   "type": "module",
-<<<<<<< HEAD
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -18,28 +17,14 @@
     "axios": "^1.13.6",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.9.0",
-=======
-  "description": "Youth Internship Support System - Training & Skill Development API",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
-  },
-  "dependencies": {
-    "bcryptjs": "^3.0.3",
->>>>>>> 05d99a0 (Add gitignore and remove node_modules)
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
-<<<<<<< HEAD
     "mongoose": "^9.2.1",
     "multer": "^2.1.1",
     "node-cron": "^4.2.1",
     "nodemailer": "^8.0.4"
-=======
-    "mongoose": "^9.2.1"
->>>>>>> 05d99a0 (Add gitignore and remove node_modules)
   },
   "devDependencies": {
     "nodemon": "^3.1.11"
