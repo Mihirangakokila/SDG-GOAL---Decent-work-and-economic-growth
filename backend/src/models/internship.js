@@ -1,53 +1,66 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose"; 
 
 const internshipSchema = new mongoose.Schema({
-  title: {
+  tittle : {
+    type : String,
+    required :true
+  },
+  description :{
+    type : String,
+    required: true
+  },
+  requiredSkills : [
+    {
+      type : String
+    }
+  ],
+  requiredEducation : {
+    type : String 
+  },
+  location: {
+  type: String
+},
+coordinates: {
+  type: {
     type: String,
-    required: true,
+    enum: ["Point"],
+    default: "Point"
   },
-  organization: {
+  coordinates: {
+    type: [Number], // [longitude, latitude]
+    default: undefined
+  }
+},
+  duration : {
+    type : String
+  },
+  status :{
     type: String,
-    required: true,
+    enum :["Draft","Active","Closed"],
+    default : "Draft"
   },
-  organizationId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
+  organizationId :{
+    type : mongoose.Schema.Types.ObjectId,
+    ref : "User",
+    required : true
   },
-  description: {
-    type: String,
-    required: true,
+  totalapplicants : {
+    type : Number,
+    default : 0 
   },
-  requirements: {
-    skills: [String],
-    education: {
-      level: String,
-      field: String,
-    },
-    location: {
-      district: String,
-      state: String,
-      preferRural: {
-        type: Boolean,
-        default: false,
-      },
-    },
-    experience: String,
+  acceptedCount :{
+    type : Number,
+    default : 0
   },
-  status: {
-    type: String,
-    enum: ['active', 'closed', 'draft'],
-    default: 'active',
-  },
-  applicantCount: {
-    type: Number,
-    default: 0,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-  deadline: Date,
-});
+  viewCount : {
+    type : Number,
+    default : 0
+  }
+  },{
+    timestamps : true
+  }
+);
 
-export default mongoose.model('Internship', internshipSchema);
+internshipSchema.index({ coordinates: "2dsphere" });
+
+export default mongoose.model("Internship", internshipSchema);
