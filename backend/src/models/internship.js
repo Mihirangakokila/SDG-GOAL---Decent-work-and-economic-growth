@@ -1,66 +1,53 @@
-import mongoose from "mongoose"; 
+import mongoose from 'mongoose';
 
 const internshipSchema = new mongoose.Schema({
-  tittle : {
-    type : String,
-    required :true
-  },
-  description :{
-    type : String,
-    required: true
-  },
-  requiredSkills : [
-    {
-      type : String
-    }
-  ],
-  requiredEducation : {
-    type : String 
-  },
-  location: {
-  type: String
-},
-coordinates: {
-  type: {
+  title: {
     type: String,
-    enum: ["Point"],
-    default: "Point"
+    required: true,
   },
-  coordinates: {
-    type: [Number], // [longitude, latitude]
-    default: undefined
-  }
-},
-  duration : {
-    type : String
-  },
-  status :{
+  organization: {
     type: String,
-    enum :["Draft","Active","Closed"],
-    default : "Draft"
+    required: true,
   },
-  organizationId :{
-    type : mongoose.Schema.Types.ObjectId,
-    ref : "User",
-    required : true
+  organizationId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
   },
-  totalapplicants : {
-    type : Number,
-    default : 0 
+  description: {
+    type: String,
+    required: true,
   },
-  acceptedCount :{
-    type : Number,
-    default : 0
+  requirements: {
+    skills: [String],
+    education: {
+      level: String,
+      field: String,
+    },
+    location: {
+      district: String,
+      state: String,
+      preferRural: {
+        type: Boolean,
+        default: false,
+      },
+    },
+    experience: String,
   },
-  viewCount : {
-    type : Number,
-    default : 0
-  }
-  },{
-    timestamps : true
-  }
-);
+  status: {
+    type: String,
+    enum: ['active', 'closed', 'draft'],
+    default: 'active',
+  },
+  applicantCount: {
+    type: Number,
+    default: 0,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  deadline: Date,
+});
 
-internshipSchema.index({ coordinates: "2dsphere" });
-
-export default mongoose.models.Internship || mongoose.model("Internship", internshipSchema);
+export default mongoose.model('Internship', internshipSchema);
