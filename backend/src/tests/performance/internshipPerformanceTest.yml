@@ -1,0 +1,17 @@
+config:
+  target: "http://localhost:5000"
+  phases:
+    - duration: 60
+      arrivalRate: 10   # 10 requests per second
+
+scenarios:
+  - flow:
+      - get:
+          url: "/api/internships/search"
+
+      - post:
+          url: "/api/internships"
+          json:
+            tittle: "Performance Test Internship"
+            description: "Testing API performance"
+            status: "Draft"
