@@ -52,6 +52,16 @@ export default function Navbar() {
                 For Organizations
               </NavLink>
             )}
+            {user && !isOrg && (
+              <NavLink to="/applications"
+                className={({ isActive }) =>
+                  `nav-link px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    isActive ? 'text-brand active' : 'text-slate-600 hover:text-navy-900'
+                  }`}
+              >
+                My Applications
+              </NavLink>
+            )}
             {isOrg && (
               <>
                 <NavLink to="/dashboard"
@@ -114,6 +124,15 @@ export default function Navbar() {
                         <div className="border-t border-slate-100 my-1" />
                       </>
                     )}
+                    {user && !isOrg && (
+                      <>
+                        <Link to="/applications" onClick={() => setDropOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+                          <Briefcase size={15} className="text-slate-400" /> My Applications
+                        </Link>
+                        <div className="border-t border-slate-100 my-1" />
+                      </>
+                    )}
                     <button onClick={handleLogout}
                       className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors">
                       <LogOut size={15} /> Sign Out
@@ -141,6 +160,9 @@ export default function Navbar() {
               <MobileLink to="/dashboard"       onClick={() => setMobileOpen(false)}>Dashboard</MobileLink>
               <MobileLink to="/dashboard/post"  onClick={() => setMobileOpen(false)}>Post Internship</MobileLink>
             </>
+          )}
+          {user && !isOrg && (
+            <MobileLink to="/applications" onClick={() => setMobileOpen(false)}>My Applications</MobileLink>
           )}
           {!user ? (
             <div className="pt-3 flex flex-col gap-2">
