@@ -43,4 +43,16 @@ export const internshipsAPI = {
   dashboard:     ()       => api.get('/internships/dashboard/stats'),
 }
 
+// ── Applications ─────────────────────────────────────────────────────────────
+export const applicationsAPI = {
+  apply: (internshipId, formData) => api.post(`/applications/apply/${internshipId}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  getMine: () => api.get('/applications/my-applications'),
+  update: (id, formData) => api.put(`/applications/${id}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  withdraw: (id) => api.delete(`/applications/${id}`)
+}
+
 export default api

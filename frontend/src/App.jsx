@@ -14,6 +14,7 @@ import InternshipAnalyticsPage   from './pages/InternshipAnalyticsPage'
 import LoginPage            from './pages/LoginPage'
 import RegisterPage         from './pages/RegisterPage'
 import NotFoundPage         from './pages/NotFoundPage'
+import MyApplicationsPage   from './pages/MyApplicationsPage'
 
 export default function App() {
   return (
@@ -49,6 +50,11 @@ export default function App() {
             <Route path="/dashboard/post"          element={<PostInternshipPage />} />
             <Route path="/dashboard/edit/:id"      element={<PostInternshipPage />} />
             <Route path="/dashboard/analytics/:id" element={<InternshipAnalyticsPage />} />
+          </Route>
+
+          {/* Authenticated routes */}
+          <Route element={<PrivateRoute />}>
+            <Route path="/applications" element={<MyApplicationsPage />} />
           </Route>
 
           {/* 404 */}
