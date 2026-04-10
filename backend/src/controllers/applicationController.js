@@ -3,7 +3,7 @@ import Internship from '../models/internship.js';
 import User from '../models/User.js';
 import { calculateEligibilityScore } from '../services/matchingService.js';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
-
+import { sendNewApplicationNotification } from '../utils/emailService.js'
 
 // POST /api/applications/apply/:internshipId
 export const applyForInternship = async (req, res) => {
@@ -122,7 +122,23 @@ export const applyForInternship = async (req, res) => {
     await Internship.findByIdAndUpdate(internshipId, {
       $inc: { totalapplicants: 1 }
     });
-
+    // ── Notify the organization by email ──────────────────────
+    try {
+      // Get the organization's email from the User model
+      const orgUser = await User.findById(internship.organizationId).select('email name')
+      if (orgUser?.email) {
+       await sendNewApplicationNotification(
+          orgUser.email,
+          orgUser.name,
+          internship.tittle,
+          name,
+          email        // applicant's email from req.body
+        )
+      }
+    } catch (emailErr) {
+      // Don't fail the application if email sending fails
+      console.error('Failed to send application notification email:', emailErr.message)
+    }
     res.status(201).json({
       success: true,
       data: application
