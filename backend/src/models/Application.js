@@ -66,6 +66,10 @@ const applicationSchema = new mongoose.Schema({
     enum: ['Applied', 'Under Review', 'Accepted', 'Rejected'],
     default: 'Applied',
   },
+  // Session token for authentication
+  sessionToken: {
+    type: String,
+  },
 
   appliedDate: {
     type: Date,

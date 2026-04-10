@@ -4,15 +4,13 @@ import User from '../models/User.js';
 import { calculateEligibilityScore } from '../services/matchingService.js';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 
+
 // POST /api/applications/apply/:internshipId
 export const applyForInternship = async (req, res) => {
   try {
-    const { youthId, name, email, phoneNumber } = req.body;
+    const { name, email, phoneNumber } = req.body;
     const { internshipId } = req.params;
-
-    if (!youthId) {
-      return res.status(400).json({ message: 'youthId is required' });
-    }
+    const youthId = req.user.id;
 
     if (!name || !email || !phoneNumber) {
       return res.status(400).json({
@@ -72,9 +70,9 @@ export const applyForInternship = async (req, res) => {
       return res.status(404).json({ message: 'Internship not found' });
     }
 
-    if (internship.status !== 'active') {
+    if (internship.status !== 'Active') {
       return res.status(400).json({
-        message: 'This internship is not active'
+        message: 'This internship is not active',
       });
     }
 
@@ -90,12 +88,8 @@ export const applyForInternship = async (req, res) => {
       });
     }
 
-    // User validation
-    const youth = await User.findById(youthId);
-    if (!youth) {
-      return res.status(404).json({ message: 'Youth not found' });
-    }
-
+    // User validation - user is already authenticated by protect middleware
+    const youth = req.user;
     if (youth.role !== 'youth') {
       return res.status(400).json({
         message: 'User is not youth'
@@ -151,6 +145,10 @@ export const updateApplication = async (req, res) => {
       return res.status(404).json({ message: "Application not found" });
     }
 
+    if (application.youthId._id.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ message: "Not authorized to update this application" });
+    }
+
     // Update text fields if provided
     if (name !== undefined) application.name = name;
     if (email !== undefined) application.email = email;
@@ -159,7 +157,7 @@ export const updateApplication = async (req, res) => {
     // Update CV if uploaded (flexibleUpload uses .any())
     if (req.files && req.files.length > 0) {
       application.cvUrl = req.files[0].path; // assuming Cloudinary returns path
-      
+
       let extractedText = '';
       try {
         const response = await fetch(application.cvUrl);
@@ -215,19 +213,15 @@ export const updateApplication = async (req, res) => {
 // @route   GET /api/applications/my-applications
 export const getMyApplications = async (req, res) => {
   try {
-    const youthId = req.query.youthId;
-
-    if (!youthId) {
-      return res.status(400).json({ message: 'youthId is required as query parameter' });
-    }
+    const youthId = req.user.id;
 
     const applications = await Application.find({ youthId })
       .populate({
         path: 'internshipId',
-        select: 'title organization description requirements status deadline',
+        select: 'tittle organizationId description requirements status deadline',
         populate: {
           path: 'organizationId',
-          select: 'name email'
+          select: 'name email organizationName'
         }
       })
       .sort({ appliedDate: -1 });
@@ -248,12 +242,8 @@ export const getMyApplications = async (req, res) => {
 // @route   GET /api/applications/check/:internshipId
 export const checkApplicationStatus = async (req, res) => {
   try {
-    const youthId = req.query.youthId;
+    const youthId = req.user.id;
     const { internshipId } = req.params;
-
-    if (!youthId) {
-      return res.status(400).json({ message: 'youthId is required as query parameter' });
-    }
 
     const application = await Application.findOne({
       youthId,
@@ -284,6 +274,10 @@ export const getApplicationById = async (req, res) => {
       return res.status(404).json({ message: 'Application not found' });
     }
 
+    if (application.youthId._id.toString() !== req.user.id && req.user.role !== 'admin' && req.user.role !== 'organization') {
+      return res.status(403).json({ message: 'Not authorized to view this application' });
+    }
+
     res.json({
       success: true,
       data: application
@@ -303,6 +297,10 @@ export const withdrawApplication = async (req, res) => {
 
     if (!application) {
       return res.status(404).json({ message: 'Application not found' });
+    }
+
+    if (application.youthId.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized to withdraw this application' });
     }
 
     if (application.status !== 'Applied') {
