@@ -9,6 +9,7 @@ import {
   createOrgVersionSnapshot,
 } from "../services/organizationService.js";
 
+// POST /organizations
 // CREATE ORGANIZATION PROFILE
 export const createOrganizationProfile = async (req, res) => {
   try {
@@ -16,9 +17,9 @@ export const createOrganizationProfile = async (req, res) => {
 
     const existing = await OrganizationProfile.findOne({ user: userId });
     if (existing) {
-      return res.status(400).json({
-        message: "Organization profile already exists for this user",
-      });
+      return res
+        .status(400)
+        .json({ message: "Organization profile already exists for this user" });
     }
 
     const payload = {
@@ -68,6 +69,7 @@ export const createOrganizationProfile = async (req, res) => {
   }
 };
 
+// GET /organizations/:id
 // GET SINGLE ORGANIZATION
 export const getOrganizationProfileById = async (req, res) => {
   try {
@@ -89,71 +91,33 @@ export const getOrganizationProfileById = async (req, res) => {
   }
 };
 
-// 🔥 FINAL: FILTER + SEARCH + PAGINATION (FIXED)
+// GET /organizations
 export const getOrganizationProfiles = async (req, res) => {
   try {
     const requester = req.user;
     let query = {};
 
-    // ROLE-BASED ACCESS
     if (requester.role === "organization") {
       query = { user: requester._id };
     } else if (requester.role === "admin") {
       query = {};
     } else {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to view organizations" });
+      return res.status(403).json({ message: "Not authorized to view organizations" });
     }
 
-    // 🔍 FILTERING + SEARCH
-    const { verified, industry, search } = req.query;
+    const organizations = await OrganizationProfile.find(query).populate(
+      "user",
+      "name email role"
+    );
 
-    if (verified !== undefined) {
-      query.verified = verified === "true";
-    }
-
-    if (industry) {
-      query.industry = { $regex: industry, $options: "i" };
-    }
-
-    if (search) {
-      query.$or = [
-        { organizationName: { $regex: search, $options: "i" } },
-        { industry: { $regex: search, $options: "i" } },
-        { location: { $regex: search, $options: "i" } },
-      ];
-    }
-
-    // ✅ SAFE PAGINATION (FIXED)
-    const page = parseInt(req.query.page);
-    const limit = parseInt(req.query.limit);
-
-    const safePage = Number.isInteger(page) && page > 0 ? page : 1;
-    const safeLimit = Number.isInteger(limit) && limit > 0 ? limit : 10;
-
-    const skip = (safePage - 1) * safeLimit;
-
-    const organizations = await OrganizationProfile.find(query)
-      .populate("user", "name email role")
-      .skip(skip)
-      .limit(safeLimit);
-
-    const total = await OrganizationProfile.countDocuments(query);
-
-    return res.status(200).json({
-      page: safePage,
-      totalPages: Math.ceil(total / safeLimit),
-      totalResults: total,
-      organizations,
-    });
+    return res.status(200).json({ organizations });
   } catch (error) {
     console.error("Error in getOrganizationProfiles:", error);
     return res.status(500).json({ message: "Server error" });
   }
 };
 
-// UPDATE ORGANIZATION
+// PUT /organizations/:id
 export const updateOrganizationProfile = async (req, res) => {
   try {
     const { id } = req.params;
@@ -168,9 +132,9 @@ export const updateOrganizationProfile = async (req, res) => {
     const isAdmin = requester.role === "admin";
 
     if (!isOwner && !isAdmin) {
-      return res.status(403).json({
-        message: "Not authorized to update this organization profile",
-      });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to update this organization profile" });
     }
 
     const snapshot = createOrgVersionSnapshot(organization);
@@ -181,7 +145,7 @@ export const updateOrganizationProfile = async (req, res) => {
       });
     }
 
-    const fields = [
+    const updatableFields = [
       "organizationId",
       "organizationName",
       "contactNumber",
@@ -194,18 +158,17 @@ export const updateOrganizationProfile = async (req, res) => {
       "internshipLocationType",
     ];
 
-    fields.forEach((field) => {
+    updatableFields.forEach((field) => {
       if (req.body[field] !== undefined) {
         organization[field] = req.body[field];
       }
     });
 
-    // ADMIN VERIFY
+    // Verified can only be changed by admin
     if (req.body.verified !== undefined && isAdmin) {
       organization.verified = Boolean(req.body.verified);
     }
 
-    // RECALCULATE
     const completeness = calculateOrgProfileCompleteness(organization);
     const readinessStatus = determineReadinessStatus(
       completeness,
@@ -238,7 +201,7 @@ export const updateOrganizationProfile = async (req, res) => {
   }
 };
 
-// UPLOAD DOCUMENT (CLOUDINARY FIXED)
+// POST /organizations/:id/documents
 export const uploadOrganizationDocument = async (req, res) => {
   try {
     const { id } = req.params;
@@ -253,64 +216,27 @@ export const uploadOrganizationDocument = async (req, res) => {
     const isAdmin = requester.role === "admin";
 
     if (!isOwner && !isAdmin) {
-      return res.status(403).json({
-        message: "Not authorized to upload documents",
-      });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to upload documents for this organization" });
     }
 
-    // CLOUDINARY UPLOAD
-    if (req.file) {
-      return cloudinary.uploader
-        .upload_stream(
-          {
-            resource_type: "raw",
-            folder: "org-docs",
-            type: "upload",
-            access_mode: "public",
-          },
-          async (error, result) => {
-            if (error) {
-              return res.status(500).json({ message: error.message });
-            }
-
-            const doc = {
-              fileName: result.original_filename,
-              url: result.secure_url,
-              sizeInBytes: result.bytes,
-              type: req.body.type,
-              uploadedAt: new Date(),
-            };
-
-            organization.documents.push(doc);
-            await organization.save();
-
-            return res.status(200).json({
-              message: "Document uploaded successfully",
-              documents: organization.documents,
-            });
-          }
-        )
-        .end(req.file.buffer);
-    }
-
-    // FALLBACK
     const { fileName, url, sizeInBytes, type } = req.body;
 
-    const { valid, message } = validateOrgDocumentMetadata({
-      fileName,
-      sizeInBytes,
-    });
+    const { valid, message } = validateOrgDocumentMetadata({ fileName, sizeInBytes });
+    if (!valid) {
+      return res.status(400).json({ message });
+    }
 
-    if (!valid) return res.status(400).json({ message });
-
-    organization.documents.push({
+    const doc = {
       fileName,
       url,
       sizeInBytes,
       type,
       uploadedAt: new Date(),
-    });
+    };
 
+    organization.documents.push(doc);
     await organization.save();
 
     return res.status(200).json({
@@ -323,7 +249,7 @@ export const uploadOrganizationDocument = async (req, res) => {
   }
 };
 
-// DELETE ORGANIZATION
+// DELETE /organizations/:id
 export const deleteOrganizationProfile = async (req, res) => {
   try {
     const { id } = req.params;
@@ -338,20 +264,16 @@ export const deleteOrganizationProfile = async (req, res) => {
     const isAdmin = requester.role === "admin";
 
     if (!isOwner && !isAdmin) {
-      return res.status(403).json({ message: "Not authorized" });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to delete this organization profile" });
     }
 
     await OrganizationProfile.findByIdAndDelete(id);
 
-    return res.status(200).json({
-      message: "Organization profile deleted successfully",
-    });
+    return res.status(200).json({ message: "Organization profile deleted successfully" });
   } catch (error) {
     console.error("Error in deleteOrganizationProfile:", error);
     return res.status(500).json({ message: "Server error" });
   }
-
 };
-
-
-

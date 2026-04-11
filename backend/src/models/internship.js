@@ -63,4 +63,5 @@ coordinates: {
 
 internshipSchema.index({ coordinates: "2dsphere" });
 
+// internship.js schema — last line
 export default mongoose.model("Internship", internshipSchema);

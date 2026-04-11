@@ -1,6 +1,5 @@
 import express from "express";
 import { protect, authorizeRoles } from "../middleware/authMiddleware.js";
-import upload from "../middleware/uploadMiddleware.js"; // ✅ ADDED
 import {
   createOrganizationProfile,
   getOrganizationProfileById,
@@ -44,12 +43,11 @@ router.put(
   updateOrganizationProfile
 );
 
-// ✅ UPDATED (ONLY CHANGE HERE)
+// Upload organization documents (logo, verification papers)
 router.post(
   "/organizations/:id/documents",
   protect,
   authorizeRoles("organization", "admin"),
-  upload.single("file"), // 🔥 REQUIRED
   uploadOrganizationDocument
 );
 
@@ -61,6 +59,4 @@ router.delete(
   deleteOrganizationProfile
 );
 
-
 export default router;
-

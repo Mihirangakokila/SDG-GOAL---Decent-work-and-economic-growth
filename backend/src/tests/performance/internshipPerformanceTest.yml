@@ -1,0 +1,22 @@
+config:
+  target: "http://localhost:5000"
+  phases:
+    - duration: 60
+      arrivalRate: 10
+
+scenarios:
+  - flow:
+      - get:
+          url: "/api/internships/search"
+
+      - post:
+          url: "/api/internships"
+          headers:
+            Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5YTAwMzRkYTI1OWE0MzNmMTYzOTE3OCIsInJvbGUiOiJvcmdhbml6YXRpb24iLCJpYXQiOjE3NzU3MjYyMTIsImV4cCI6MTc3NjMzMTAxMn0.uhyJtDoKj0GWAJiEeTkQGjK--KfJmIdq8d7gySXddAo"
+            Content-Type: "application/json"
+          json:
+            title: "Performance Test Internship"
+            description: "Testing API performance"
+            status: "Draft"
+            organization: "69a0034da259a433f1639178"   # replace with valid ID
+

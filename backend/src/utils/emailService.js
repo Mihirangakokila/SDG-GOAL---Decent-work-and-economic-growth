@@ -237,3 +237,4 @@ export const sendWeeklySummaryEmail = async (orgEmail, orgName, stats) => {
     html,
   });
 };
+

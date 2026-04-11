@@ -183,9 +183,8 @@ export const getDashboardStatsService = async (organizationId) => {
   const totalViews = internships.reduce((sum, i) => sum + i.viewCount, 0);
 
   // Fixed: use totalApplicants (capital A) — update schema field name to match
-  const totalApplicants = internships.reduce((sum, i) => sum + (i.totalApplicants ?? 0), 0);
-  const acceptedCount   = internships.reduce((sum, i) => sum + (i.acceptedCount    ?? 0), 0);
-
+ const totalApplicants = internships.reduce((sum, i) => sum + (i.totalapplicants ?? 0), 0);
+ const acceptedCount   = internships.reduce((sum, i) => sum + (i.acceptedCount    ?? 0), 0);
   const acceptanceRate =
     totalApplicants > 0
       ? ((acceptedCount / totalApplicants) * 100).toFixed(2)
