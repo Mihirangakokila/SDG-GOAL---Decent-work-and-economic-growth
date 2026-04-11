@@ -2,7 +2,7 @@ import { Routes, Route } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './context/AuthContext'
 import Layout from './components/layout/Layout'
-import { PrivateRoute, OrgRoute } from './components/common/PrivateRoute'
+import { PrivateRoute, OrgRoute, AdminRoute } from './components/common/PrivateRoute'
 
 // Pages
 import HomePage             from './pages/HomePage'
@@ -14,6 +14,11 @@ import InternshipAnalyticsPage   from './pages/InternshipAnalyticsPage'
 import LoginPage            from './pages/LoginPage'
 import RegisterPage         from './pages/RegisterPage'
 import NotFoundPage         from './pages/NotFoundPage'
+import ProfilePage          from './pages/ProfilePage'
+import CreateProfilePage    from './pages/CreateProfilePage'
+import OrganizationProfilePage from './pages/OrganizationProfilePage'
+import OrganizationCreatePage  from './pages/OrganizationCreatePage'
+import AdminOrganizationsPage  from './pages/AdminOrganizationsPage'
 
 export default function App() {
   return (
@@ -49,6 +54,17 @@ export default function App() {
             <Route path="/dashboard/post"          element={<PostInternshipPage />} />
             <Route path="/dashboard/edit/:id"      element={<PostInternshipPage />} />
             <Route path="/dashboard/analytics/:id" element={<InternshipAnalyticsPage />} />
+            <Route path="/organization"            element={<OrganizationProfilePage />} />
+            <Route path="/organization/create"     element={<OrganizationCreatePage />} />
+          </Route>
+
+          <Route element={<PrivateRoute />}>
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/profile/create" element={<CreateProfilePage />} />
+          </Route>
+
+          <Route element={<AdminRoute />}>
+            <Route path="/admin/organizations" element={<AdminOrganizationsPage />} />
           </Route>
 
           {/* 404 */}

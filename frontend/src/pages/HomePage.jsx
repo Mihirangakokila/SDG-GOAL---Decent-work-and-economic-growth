@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import api from '../services/api'
 import {
   Search, MapPin, ArrowRight, Briefcase, Users, TrendingUp,
   Star, ChevronRight, Zap, Shield, Globe
@@ -44,6 +46,36 @@ export default function HomePage() {
   const [keyword,  setKeyword]  = useState('')
   const [location, setLocation] = useState('')
   const navigate = useNavigate()
+  const { user, isOrg } = useAuth()
+  const userId = useMemo(() => user?._id ?? user?.id ?? null, [user])
+  const [profileExists, setProfileExists] = useState(null)
+  const [profileCheckLoading, setProfileCheckLoading] = useState(false)
+
+  useEffect(() => {
+    if (!userId || isOrg) {
+      setProfileExists(null)
+      setProfileCheckLoading(false)
+      return
+    }
+    let cancelled = false
+    ;(async () => {
+      setProfileCheckLoading(true)
+      try {
+        await api.get(`/profile/${userId}`)
+        if (!cancelled) setProfileExists(true)
+      } catch (err) {
+        if (!cancelled) {
+          if (err.response?.status === 404) setProfileExists(false)
+          else setProfileExists(false)
+        }
+      } finally {
+        if (!cancelled) setProfileCheckLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [userId, isOrg])
 
   const handleSearch = (e) => {
     e.preventDefault()
@@ -136,6 +168,33 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {user && !isOrg ? (
+        <section className="py-12 bg-white">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="card p-7 max-w-2xl mx-auto text-center">
+              {profileCheckLoading || profileExists === null ? (
+                <p className="text-sm text-slate-500">Checking profile…</p>
+              ) : !profileExists ? (
+                <>
+                  <h2 className="font-display font-bold text-xl text-navy-900 mb-2">Create Your Profile</h2>
+                  <p className="text-sm text-slate-500 mb-5">Add your details to enhance your experience</p>
+                  <button type="button" onClick={() => navigate('/profile/create')} className="btn-primary">
+                    Create Profile
+                  </button>
+                </>
+              ) : (
+                <>
+                  <h2 className="font-display font-bold text-xl text-navy-900 mb-5">Go to Your Profile</h2>
+                  <button type="button" onClick={() => navigate('/profile')} className="btn-primary">
+                    View Profile
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       {/* ── Features ─────────────────────────────────────────────────────── */}
       <section className="py-20 bg-white">

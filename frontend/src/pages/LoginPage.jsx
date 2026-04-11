@@ -16,17 +16,30 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
     if (!form.email || !form.password) {
       toast.error('Please fill in all fields')
       return
     }
+
     setLoading(true)
+
     try {
       const res = await authAPI.login(form)
       const { token, user } = res.data
+
       login(user, token)
+
       toast.success(`Welcome back, ${user.name}!`)
-      navigate(user.role === 'organization' ? '/dashboard' : '/')
+
+      if (user.role === 'admin') {
+        navigate('/admin/organizations')
+      } else if (user.role === 'organization') {
+        navigate('/dashboard')
+      } else {
+        navigate('/')
+      }
+
     } catch (err) {
       toast.error(err.response?.data?.message ?? 'Invalid credentials')
     } finally {
@@ -36,6 +49,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex">
+      
       {/* Left panel */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-navy-950 via-navy-900 to-navy-800 items-center justify-center p-14 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-brand/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
@@ -63,15 +77,19 @@ export default function LoginPage() {
       {/* Right panel */}
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-md animate-fade-up">
+
           <div className="mb-8">
             <h1 className="font-display font-bold text-3xl text-navy-900 mb-2">Sign in</h1>
             <p className="text-slate-500 text-sm">
               Don't have an account?{' '}
-              <Link to="/register" className="text-brand font-medium hover:underline">Create one free</Link>
+              <Link to="/register" className="text-brand font-medium hover:underline">
+                Create one free
+              </Link>
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+
             <div>
               <label className="label">Email address</label>
               <input
@@ -89,6 +107,7 @@ export default function LoginPage() {
                 <label className="label mb-0">Password</label>
                 <a href="#" className="text-xs text-brand hover:underline">Forgot password?</a>
               </div>
+
               <div className="relative">
                 <input
                   type={show ? 'text' : 'password'}
@@ -98,20 +117,28 @@ export default function LoginPage() {
                   onChange={e => set('password', e.target.value)}
                   className="input pr-10"
                 />
-                <button type="button" onClick={() => setShow(!show)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
+
+                <button
+                  type="button"
+                  onClick={() => setShow(!show)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                >
                   {show ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
 
-            <button type="submit" disabled={loading}
-              className="btn-primary w-full justify-center py-3 text-base mt-2">
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary w-full justify-center py-3 text-base mt-2"
+            >
               {loading
                 ? <><Loader2 size={16} className="animate-spin" /> Signing in…</>
                 : <>Sign In <ArrowRight size={15} /></>
               }
             </button>
+
           </form>
 
           <div className="mt-8 pt-8 border-t border-slate-100 text-center">
@@ -121,6 +148,7 @@ export default function LoginPage() {
               <a href="#" className="text-slate-600 hover:underline">Privacy Policy</a>.
             </p>
           </div>
+
         </div>
       </div>
     </div>

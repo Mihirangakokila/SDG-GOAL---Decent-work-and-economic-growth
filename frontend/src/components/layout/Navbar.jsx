@@ -3,11 +3,11 @@ import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
   Briefcase, Menu, X, ChevronDown,
-  LayoutDashboard, LogOut, User, PlusCircle, Search
+  LayoutDashboard, LogOut, User, PlusCircle, Building2
 } from 'lucide-react'
 
 export default function Navbar() {
-  const { user, logout, isOrg } = useAuth()
+  const { user, logout, isOrg, isAdmin } = useAuth()
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [dropOpen,   setDropOpen]   = useState(false)
@@ -34,14 +34,26 @@ export default function Navbar() {
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-1">
-            <NavLink to="/internships"
-              className={({ isActive }) =>
-                `nav-link px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  isActive ? 'text-brand active' : 'text-slate-600 hover:text-navy-900'
-                }`}
-            >
-              Browse Jobs
-            </NavLink>
+            {!isAdmin ? (
+              <NavLink to="/internships"
+                className={({ isActive }) =>
+                  `nav-link px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    isActive ? 'text-brand active' : 'text-slate-600 hover:text-navy-900'
+                  }`}
+              >
+                Browse Jobs
+              </NavLink>
+            ) : null}
+            {isAdmin && (
+              <NavLink to="/admin/organizations"
+                className={({ isActive }) =>
+                  `nav-link px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    isActive ? 'text-brand active' : 'text-slate-600 hover:text-navy-900'
+                  }`}
+              >
+                Admin Dashboard
+              </NavLink>
+            )}
             {!user && (
               <NavLink to="/for-organizations"
                 className={({ isActive }) =>
@@ -101,6 +113,12 @@ export default function Navbar() {
                 {dropOpen && (
                   <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl border border-slate-100 shadow-lg py-1 z-50"
                     onMouseLeave={() => setDropOpen(false)}>
+                    {isAdmin && (
+                      <Link to="/admin/organizations" onClick={() => setDropOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+                        <Building2 size={15} className="text-slate-400" /> Admin Dashboard
+                      </Link>
+                    )}
                     {isOrg && (
                       <>
                         <Link to="/dashboard" onClick={() => setDropOpen(false)}
@@ -111,9 +129,19 @@ export default function Navbar() {
                           className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
                           <PlusCircle size={15} className="text-slate-400" /> Post Internship
                         </Link>
+                        <Link to="/organization" onClick={() => setDropOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+                          <Building2 size={15} className="text-slate-400" /> Organization Profile
+                        </Link>
                         <div className="border-t border-slate-100 my-1" />
                       </>
                     )}
+                    {!isOrg && !isAdmin ? (
+                      <Link to="/profile" onClick={() => setDropOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+                        <User size={15} className="text-slate-400" /> Profile
+                      </Link>
+                    ) : null}
                     <button onClick={handleLogout}
                       className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors">
                       <LogOut size={15} /> Sign Out
@@ -135,11 +163,17 @@ export default function Navbar() {
       {/* Mobile menu */}
       {mobileOpen && (
         <div className="md:hidden border-t border-slate-100 bg-white px-4 py-4 space-y-1 animate-fade-in">
-          <MobileLink to="/internships"   onClick={() => setMobileOpen(false)}>Browse Jobs</MobileLink>
+          {!isAdmin ? (
+            <MobileLink to="/internships" onClick={() => setMobileOpen(false)}>Browse Jobs</MobileLink>
+          ) : null}
+          {isAdmin && (
+            <MobileLink to="/admin/organizations" onClick={() => setMobileOpen(false)}>Admin Dashboard</MobileLink>
+          )}
           {isOrg && (
             <>
               <MobileLink to="/dashboard"       onClick={() => setMobileOpen(false)}>Dashboard</MobileLink>
               <MobileLink to="/dashboard/post"  onClick={() => setMobileOpen(false)}>Post Internship</MobileLink>
+              <MobileLink to="/organization" onClick={() => setMobileOpen(false)}>Organization Profile</MobileLink>
             </>
           )}
           {!user ? (
@@ -148,10 +182,15 @@ export default function Navbar() {
               <Link to="/register" className="btn-primary  w-full justify-center" onClick={() => setMobileOpen(false)}>Get Started</Link>
             </div>
           ) : (
-            <button onClick={handleLogout}
-              className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-red-600 rounded-lg hover:bg-red-50 transition-colors mt-2">
-              <LogOut size={15} /> Sign Out
-            </button>
+            <div className="mt-2 space-y-1">
+              {!isOrg && !isAdmin ? (
+                <MobileLink to="/profile" onClick={() => setMobileOpen(false)}>Profile</MobileLink>
+              ) : null}
+              <button onClick={handleLogout}
+                className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-red-600 rounded-lg hover:bg-red-50 transition-colors">
+                <LogOut size={15} /> Sign Out
+              </button>
+            </div>
           )}
         </div>
       )}
