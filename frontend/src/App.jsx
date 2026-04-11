@@ -24,7 +24,7 @@ import SkillDevelopmentPage    from './pages/SkillDevelopmentPage'
 import CourseAdvisorPage        from './pages/CourseAdvisorPage'
 import OrganizerProfilePage     from './pages/OrganizerProfilePage'
 import ForOrganizationsPage     from './pages/ForOrganizationsPage'
-
+import SavedInternshipsPage from './pages/SavedInternshipsPage'
 export default function App() {
   return (
     <AuthProvider>
@@ -55,7 +55,7 @@ export default function App() {
           <Route path="/login"          element={<LoginPage />} />
           <Route path="/register"       element={<RegisterPage />} />
           <Route path="/for-organizations" element={<ForOrganizationsPage />} />
-
+          <Route path="/saved" element={<SavedInternshipsPage />} />
           {/* Organization-only routes */}
           <Route element={<OrgRoute />}>
             <Route path="/dashboard"               element={<DashboardPage />} />

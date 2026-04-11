@@ -3,14 +3,21 @@ import { useParams, Link } from 'react-router-dom'
 import { internshipsAPI, applicationsAPI } from '../services/api'
 import {
   MapPin, Clock, Eye, Briefcase, GraduationCap,
-  ArrowLeft, CalendarDays, Share2, BookmarkPlus, Loader2, X
+  ArrowLeft, CalendarDays, Share2, BookmarkPlus, BookmarkCheck, Loader2, X
 } from 'lucide-react'
 import { formatDate, skillColor, statusBadge } from '../utils/helpers'
+
+const STORAGE_KEY = 'savedInternships'
+
+const getSaved = () => JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
 
 export default function InternshipDetailPage() {
   const { id } = useParams()
   const [internship, setInternship] = useState(null)
   const [loading, setLoading] = useState(true)
+
+  const [isSaved, setIsSaved] = useState(() => getSaved().includes(id))
+  const [copyFeedback, setCopyFeedback] = useState(false)
 
   const [showApplyModal, setShowApplyModal] = useState(false)
   const [applyForm, setApplyForm] = useState({ name: '', email: '', phone: '', cv: null })
@@ -35,11 +42,33 @@ export default function InternshipDetailPage() {
     load()
   }, [id])
 
+  const handleSave = () => {
+    const saved = getSaved()
+    let updated
+    if (saved.includes(id)) {
+      updated = saved.filter(s => s !== id)
+      setIsSaved(false)
+    } else {
+      updated = [...saved, id]
+      setIsSaved(true)
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+  }
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      setCopyFeedback(true)
+      setTimeout(() => setCopyFeedback(false), 2000)
+    } catch {
+      window.prompt('Copy this link:', window.location.href)
+    }
+  }
+
   const handleApplySubmit = async (e) => {
     e.preventDefault()
     setApplyError('')
 
-    // Validations
     if (!applyForm.name.trim()) {
       return setApplyError('Full Name is required.')
     }
@@ -185,12 +214,25 @@ export default function InternshipDetailPage() {
                 Applications Closed
               </div>
             )}
+
             <div className="flex gap-2 mt-3">
-              <button className="btn-secondary flex-1 justify-center text-sm gap-1.5">
-                <BookmarkPlus size={14} /> Save
+              <button
+                onClick={handleSave}
+                className={`btn-secondary flex-1 justify-center text-sm gap-1.5 transition-colors ${
+                  isSaved ? 'text-brand border-brand/40 bg-brand/5' : ''
+                }`}
+              >
+                {isSaved
+                  ? <><BookmarkCheck size={14} className="fill-brand stroke-brand" /> Saved</>
+                  : <><BookmarkPlus size={14} /> Save</>
+                }
               </button>
-              <button className="btn-secondary flex-1 justify-center text-sm gap-1.5">
-                <Share2 size={14} /> Share
+              <button
+                onClick={handleShare}
+                className="btn-secondary flex-1 justify-center text-sm gap-1.5"
+              >
+                <Share2 size={14} />
+                {copyFeedback ? 'Copied!' : 'Share'}
               </button>
             </div>
           </div>
@@ -336,7 +378,7 @@ export default function InternshipDetailPage() {
                     type="email"
                     required
                     className="form-input w-full"
-                    placeholder="john@example.com"
+                    placeholder="john@gmail.com"
                     value={applyForm.email}
                     onChange={(e) => setApplyForm({ ...applyForm, email: e.target.value })}
                   />
@@ -348,7 +390,7 @@ export default function InternshipDetailPage() {
                     type="tel"
                     required
                     className="form-input w-full"
-                    placeholder="+1 234 567 890"
+                    placeholder="0712345678"
                     value={applyForm.phone}
                     onChange={(e) => setApplyForm({ ...applyForm, phone: e.target.value })}
                   />
@@ -359,6 +401,7 @@ export default function InternshipDetailPage() {
                   <input
                     type="file"
                     required
+                    accept=".pdf,.doc,.docx"
                     className="block w-full text-sm text-slate-500
                       file:mr-4 file:py-2.5 file:px-4
                       file:rounded-xl file:border-0

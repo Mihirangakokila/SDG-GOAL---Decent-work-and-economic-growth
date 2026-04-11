@@ -3,7 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
   Briefcase, Menu, X, ChevronDown,
-  LayoutDashboard, LogOut, User, PlusCircle, Building2, GraduationCap
+  LayoutDashboard, LogOut, User, PlusCircle, Building2, GraduationCap, BookmarkCheck
 } from 'lucide-react'
 
 export default function Navbar() {
@@ -57,16 +57,28 @@ export default function Navbar() {
                   Browse Courses
                 </NavLink>
                 {user && !isOrg && (
-                  <NavLink
-                    to="/applications"
-                    className={({ isActive }) =>
-                      `px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                        isActive ? 'text-brand' : 'text-slate-600 hover:text-navy-900'
-                      }`
-                    }
-                  >
-                    My Applications
-                  </NavLink>
+                  <>
+                    <NavLink
+                      to="/applications"
+                      className={({ isActive }) =>
+                        `px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          isActive ? 'text-brand' : 'text-slate-600 hover:text-navy-900'
+                        }`
+                      }
+                    >
+                      My Applications
+                    </NavLink>
+                    <NavLink
+                      to="/saved"
+                      className={({ isActive }) =>
+                        `px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          isActive ? 'text-brand' : 'text-slate-600 hover:text-navy-900'
+                        }`
+                      }
+                    >
+                      Saved
+                    </NavLink>
+                  </>
                 )}
               </>
             )}
@@ -128,7 +140,7 @@ export default function Navbar() {
                     }`
                   }
                 >
-                  My courses
+                  My Courses
                 </NavLink>
               </>
             )}
@@ -211,7 +223,7 @@ export default function Navbar() {
                           onClick={() => setDropOpen(false)}
                           className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-slate-50"
                         >
-                          <GraduationCap size={15} /> My courses
+                          <GraduationCap size={15} /> My Courses
                         </Link>
 
                         <div className="border-t my-1" />
@@ -228,7 +240,7 @@ export default function Navbar() {
                           onClick={() => setDropOpen(false)}
                           className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-slate-50"
                         >
-                          <GraduationCap size={15} /> Browse courses
+                          <GraduationCap size={15} /> Browse Courses
                         </Link>
 
                         <div className="border-t my-1" />
@@ -239,6 +251,14 @@ export default function Navbar() {
                           className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-slate-50"
                         >
                           <Briefcase size={15} /> My Applications
+                        </Link>
+
+                        <Link
+                          to="/saved"
+                          onClick={() => setDropOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-slate-50"
+                        >
+                          <BookmarkCheck size={15} /> Saved Internships
                         </Link>
 
                         <Link
@@ -306,7 +326,7 @@ export default function Navbar() {
                 Organization Profile
               </MobileLink>
               <MobileLink to="/organization/courses" onClick={() => setMobileOpen(false)}>
-                My courses
+                My Courses
               </MobileLink>
             </>
           )}
@@ -315,6 +335,9 @@ export default function Navbar() {
             <>
               <MobileLink to="/applications" onClick={() => setMobileOpen(false)}>
                 My Applications
+              </MobileLink>
+              <MobileLink to="/saved" onClick={() => setMobileOpen(false)}>
+                Saved Internships
               </MobileLink>
               <MobileLink to="/profile" onClick={() => setMobileOpen(false)}>
                 Profile
