@@ -1,19 +1,38 @@
 import Course from "../models/courseModel.js";
-
-const isValidUrl = (url) => {
-  try {
-    const u = new URL(url);
-    return u.protocol === "http:" || u.protocol === "https:";
-  } catch {
-    return false;
-  }
-};
+import CourseApplication from "../models/applicationModel.js";
+import { isValidHttpUrl } from "../utils/courseUrl.js";
 
 export const listCourses = async (req, res) => {
   try {
-    const courses = await Course.find()
+    const q = (req.query.q || "").toString().trim();
+    const type = (req.query.type || "").toString().trim(); // Online | Physical
+    const location = (req.query.location || "").toString().trim();
+    const sort = (req.query.sort || "newest").toString().trim(); // newest | oldest
+
+    const filter = {};
+    if (type && ["Online", "Physical"].includes(type)) {
+      filter.type = type;
+    }
+
+    const and = [];
+    if (q) {
+      and.push({
+        $or: [
+          { title: { $regex: q, $options: "i" } },
+          { description: { $regex: q, $options: "i" } },
+        ],
+      });
+    }
+    if (location) {
+      and.push({ location: { $regex: location, $options: "i" } });
+    }
+    if (and.length) filter.$and = and;
+
+    const sortSpec = sort === "oldest" ? { createdAt: 1 } : { createdAt: -1 };
+
+    const courses = await Course.find(filter)
       .populate("organizerId", "name email")
-      .sort({ createdAt: -1 })
+      .sort(sortSpec)
       .lean();
     res.json(courses);
   } catch (e) {
@@ -39,7 +58,7 @@ export const createCourse = async (req, res) => {
     if (!link || !String(link).trim()) {
       return res.status(400).json({ message: "Course link is required" });
     }
-    if (!isValidUrl(link.trim())) {
+    if (!isValidHttpUrl(link.trim())) {
       return res
         .status(400)
         .json({ message: "Course link must be a valid http(s) URL" });
@@ -69,7 +88,21 @@ export const myCourses = async (req, res) => {
     const courses = await Course.find({ organizerId: req.user._id })
       .sort({ createdAt: -1 })
       .lean();
-    res.json(courses);
+    if (!courses.length) return res.json(courses);
+
+    const ids = courses.map((c) => c._id);
+    const agg = await CourseApplication.aggregate([
+      { $match: { courseId: { $in: ids } } },
+      { $group: { _id: "$courseId", applicationCount: { $sum: 1 } } },
+    ]);
+    const countById = new Map(
+      agg.map((row) => [String(row._id), row.applicationCount])
+    );
+    const withCounts = courses.map((c) => ({
+      ...c,
+      applicationCount: countById.get(String(c._id)) || 0,
+    }));
+    res.json(withCounts);
   } catch (e) {
     res.status(500).json({ message: e.message || "Failed to load your courses" });
   }
@@ -109,7 +142,7 @@ export const updateCourse = async (req, res) => {
     if (link !== undefined) {
       if (!String(link).trim())
         return res.status(400).json({ message: "Course link is required" });
-      if (!isValidUrl(link.trim())) {
+      if (!isValidHttpUrl(link.trim())) {
         return res
           .status(400)
           .json({ message: "Course link must be a valid http(s) URL" });
