@@ -507,6 +507,14 @@ Content-Type: application/json
 | POST | `/api/email/test/closed` | ❌ | Test internship closed email |
 | POST | `/api/email/test/weekly` | ❌ | Test weekly digest email |
 
+
+### Advisor (AI) Routes
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/advisor/status` | ❌ | Check if AI advisor is enabled and get chat endpoint |
+| POST | `/api/advisor/chat` | ❌ | Send chat messages to AI model and receive response |
+
 > ⚠️ Email test routes are only available when `NODE_ENV=development`. They are automatically disabled in production.
 
 ---
