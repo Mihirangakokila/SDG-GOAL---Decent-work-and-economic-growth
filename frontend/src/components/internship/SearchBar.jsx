@@ -1,7 +1,15 @@
 import { useState, useRef } from 'react'
-import { Search, MapPin, SlidersHorizontal, X, Tag } from 'lucide-react'
+import { Search, MapPin, SlidersHorizontal, X, Tag, GraduationCap } from 'lucide-react'
 
-const EDUCATION_OPTIONS = ['', "Bachelor's", "Master's", "PhD", "Diploma", "Any"]
+const EDUCATION_OPTIONS = [
+  { label: 'Any level',    value: ''           },
+  { label: 'High School',  value: 'High School'},
+  { label: 'Diploma',      value: 'Diploma'    },
+  { label: "Bachelor's",   value: "Bachelor's" },
+  { label: "Master's",     value: "Master's"   },
+  { label: 'PhD',          value: 'PhD'        },
+]
+
 // Empty string = no status filter (shows all), matching backend behavior
 const STATUS_OPTIONS = [
   { value: '',       label: 'All Statuses' },
@@ -10,12 +18,17 @@ const STATUS_OPTIONS = [
   { value: 'Draft',  label: 'Draft'        },
 ]
 
+const SUGGESTED_SKILLS = [
+  'React', 'Python', 'Node.js', 'Java', 'Data Analysis',
+  'UI/UX Design', 'Machine Learning', 'Marketing', 'Excel', 'SQL',
+]
+
 export default function SearchBar({ params, onChange }) {
   const [showFilters, setShowFilters] = useState(false)
 
   // Skills are managed as a tag array internally, sent as clean comma string to backend
-  const [skillInput, setSkillInput]   = useState('')
-  const skillInputRef                 = useRef(null)
+  const [skillInput, setSkillInput] = useState('')
+  const skillInputRef               = useRef(null)
 
   // Parse current skills string → array (trim each, remove blanks)
   const skillsArray = (params.skills ?? '')
@@ -68,7 +81,7 @@ export default function SearchBar({ params, onChange }) {
   const clearAll = () => {
     setLocationDraft('')
     setSkillInput('')
-    onChange({ ...params, keyword: '', location: '', skills: '', education: '', status: '', page: 1 })
+    onChange({ ...params, keyword: '', location: '', skills: '', education: '', status: 'Active', page: 1 })
   }
 
   const hasFilters = skillsArray.length > 0 || params.education || params.status
@@ -155,6 +168,22 @@ export default function SearchBar({ params, onChange }) {
                   className="flex-1 min-w-[140px] text-sm bg-transparent focus:outline-none placeholder:text-slate-400"
                 />
               </div>
+
+              {/* Suggested skill pills */}
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {SUGGESTED_SKILLS.filter(s => !skillsArray.includes(s)).slice(0, 6).map(s => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => addSkill(s)}
+                    className="px-2 py-0.5 text-xs bg-slate-100 text-slate-500 rounded-full
+                               hover:bg-brand/10 hover:text-brand transition-colors"
+                  >
+                    + {s}
+                  </button>
+                ))}
+              </div>
+
               <p className="text-xs text-slate-400 mt-1">
                 Press <kbd className="px-1 py-0.5 bg-slate-100 rounded text-xs">Enter</kbd> after each skill
               </p>
@@ -162,29 +191,32 @@ export default function SearchBar({ params, onChange }) {
 
             {/* Education */}
             <div>
-              <label className="label">Required Education</label>
+              <label className="label flex items-center gap-1.5">
+                <GraduationCap size={13} className="text-slate-400" /> Required Education
+              </label>
               <select
                 value={params.education ?? ''}
                 onChange={e => set('education', e.target.value)}
                 className="input"
               >
                 {EDUCATION_OPTIONS.map(o => (
-                  <option key={o} value={o}>{o || 'Any level'}</option>
+                  <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </select>
             </div>
 
-            {/* Status */}
+            {/* Internship Type */}
             <div>
-              <label className="label">Status</label>
+              <label className="label">Internship Type</label>
               <select
-                value={params.status ?? ''}
-                onChange={e => set('status', e.target.value)}
+                value={params.type ?? ''}
+                onChange={e => set('type', e.target.value)}
                 className="input"
               >
-                {STATUS_OPTIONS.map(o => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
+                <option value="">Any Type</option>
+                <option value="remote">Remote</option>
+                <option value="onsite">On-site</option>
+                <option value="hybrid">Hybrid</option>
               </select>
             </div>
           </div>
