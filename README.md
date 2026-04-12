@@ -43,15 +43,19 @@ This platform enables:
 - ✅ Post, edit, and manage internship opportunities
 - ✅ Track internship views and applications
 - ✅ View dashboard analytics
+- ✅ Receive personalized suggestions to improve profile quality
 - ✅ Manage organization documents and verification
 - ✅ Email notifications for internship lifecycle events
 - ✅ Weekly activity digest emails
 
 ### For Youth
 - ✅ Create comprehensive profiles with skills and experience
+- ✅ Upload CV/documents with validation
+- ✅ View and manage profile details 
 - ✅ Search and filter internship opportunities
 - ✅ Apply for internships
 - ✅ Track profile strength and eligibility
+- ✅ Receive personalized suggestions to improve profile quality
 - ✅ View rural support priority status
 
 ### For Admins
@@ -450,6 +454,10 @@ Content-Type: application/json
 | PUT | `/api/profile/:userId` | ✅ | Update youth profile |
 | POST | `/api/profile/:userId/upload-cv` | ✅ | Upload CV/Documents |
 | DELETE | `/api/profile/:userId` | ✅ | Delete youth profile |
+| POST | `/api/applications` | ✅ | youth | Apply for an internship |
+| GET | `/api/applications/my` | ✅ | youth | Get applications of logged-in user |
+| GET | `/api/applications/:id` | ✅ | youth/org/admin | Get application details |
+| DELETE | `/api/applications/:id` | ✅ | youth | Withdraw application |
 
 ### Organization Profile Routes
 
@@ -461,6 +469,34 @@ Content-Type: application/json
 | PUT | `/api/organizations/:id` | ✅ | Update organization profile |
 | POST | `/api/organizations/:id/documents` | ✅ | Upload documents |
 | DELETE | `/api/organizations/:id` | ✅ | Delete organization profile |
+
+### 📄 Application Routes
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| PUT | `/api/applications/:id/status` | ✅ | Update application status (accept/reject) |
+| GET | `/api/applications/internship/:internshipId` | ✅ | Get applications for a specific internship |
+
+### 📚 Course Routes
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/courses/my` | ✅ | Get courses created by the logged-in organizer |
+| POST | `/api/courses` | ✅ | Create a course |
+| PUT | `/api/courses/:id` | ✅ | Update a course |
+| DELETE | `/api/courses/:id` | ✅ | Delete a course |
+
+### Admin Routes
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/profiles` | ✅ | View all youth profiles |
+| DELETE | `/api/profile/:userId` | ✅ | Remove inappropriate user profile |
+| GET | `/api/organizations` | ✅ | View all organizations |
+| PUT | `/api/organizations/:id` | ✅ | Verify or update organization |
+| DELETE | `/api/organizations/:id` | ✅ | Remove organization |
+| GET | `/api/internships/:id` | ❌ | Review internship details |
+| DELETE | `/api/internships/:id` | ✅ | Remove internship |
+
 
 ### Email Test Routes (Development Only)
 
