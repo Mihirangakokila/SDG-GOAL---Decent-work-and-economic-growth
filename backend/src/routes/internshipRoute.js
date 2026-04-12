@@ -7,8 +7,8 @@ import {
   getMyInternships,
   incrementViewCountController,
   getDashboardStats,
-  searchInternshipsController
-
+  searchInternshipsController,
+  getNearbyInternshipsController
 } from "../controllers/internshipController.js";
 
 // Import authentication middleware - now in same backend/src folder
@@ -54,6 +54,11 @@ router.get(
 
 // Search internships
 router.get("/search", searchInternshipsController);
+
+// ── Nearby internships for a logged-in youth user ─────────────────────────────
+// GET /internships/nearby?radius=50&limit=10
+// Returns Active internships within `radius` km of the youth's profile location.
+router.get("/nearby", protect, authorizeRoles("youth"), getNearbyInternshipsController);
 
 // Route to get a single internship by ID (public)
 router.get("/:id", getInternshipByIdController);

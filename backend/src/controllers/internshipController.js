@@ -6,8 +6,11 @@ import {
   getMyInternshipsService,
   incrementViewCountService,
   getDashboardStatsService,
-  searchInternshipsService
+  searchInternshipsService,
+  getNearbyInternshipsService
 } from "../services/internshipService.js";
+import YouthProfile from "../models/YouthProfile.js";
+
 
 // Controller to handle internship creation
 // Requires: Authentication (protect middleware) and organization role
@@ -134,5 +137,43 @@ export const searchInternshipsController = async (req, res) => {
       success: false,
       message: error.message
     });
+  }
+};
+
+// ════════════════════════════════════════════════════════════════════════════════
+// GET NEARBY  GET /internships/nearby
+// Protected — only youth role. Reads coordinates from their own profile.
+// ════════════════════════════════════════════════════════════════════════════════
+export const getNearbyInternshipsController = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const radiusKm = Number(req.query.radius) || 50;
+    const limit = Number(req.query.limit) || 10;
+
+    // Load the youth's profile to get their saved coordinates
+    const profile = await YouthProfile.findOne({ user: userId }).select("coordinates");
+
+    if (
+      !profile ||
+      !profile.coordinates ||
+      !Array.isArray(profile.coordinates.coordinates) ||
+      profile.coordinates.coordinates.length < 2
+    ) {
+      // Profile has no geocoded location — return empty so frontend can handle gracefully
+      return res.status(200).json({ internships: [], locationAvailable: false });
+    }
+
+    const [lng, lat] = profile.coordinates.coordinates;
+
+    const internships = await getNearbyInternshipsService(lng, lat, radiusKm, limit);
+
+    return res.status(200).json({
+      internships,
+      locationAvailable: true,
+      center: { lng, lat },
+    });
+  } catch (error) {
+    console.error("getNearbyInternshipsController error:", error);
+    res.status(500).json({ message: error.message });
   }
 };
