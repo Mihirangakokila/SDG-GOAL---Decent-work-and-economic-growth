@@ -470,14 +470,14 @@ Content-Type: application/json
 | POST | `/api/organizations/:id/documents` | ✅ | Upload documents |
 | DELETE | `/api/organizations/:id` | ✅ | Delete organization profile |
 
-### 📄 Application Routes
+### Application Routes
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
 | PUT | `/api/applications/:id/status` | ✅ | Update application status (accept/reject) |
 | GET | `/api/applications/internship/:internshipId` | ✅ | Get applications for a specific internship |
 
-### 📚 Course Routes
+### Course Routes
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
