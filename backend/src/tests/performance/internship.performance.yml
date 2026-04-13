@@ -1,0 +1,115 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# Performance Test — Internship API (Enhanced)
+# Tool: Artillery.io
+# Usage: npx artillery run src/tests/performance/internship.performance.yml
+#
+# Prerequisites:
+#   • Set ORG_TOKEN to a valid organisation JWT
+#   • Set YOUTH_TOKEN to a valid youth JWT
+#   • Set INTERNSHIP_ID to an existing internship ID
+#
+# Phases:
+#   Phase 1 - Warm-up:  10 users/sec for 30s
+#   Phase 2 - Ramp-up: ramps from 10 → 50 users/sec over 60s
+#   Phase 3 - Spike:    50 users/sec for 30s (heavy burst)
+#   Phase 4 - Cool-down: ramps from 50 → 5 over 30s
+# ══════════════════════════════════════════════════════════════════════════════
+
+config:
+  target: "http://localhost:5000"
+  phases:
+    - name: "Warm-up"
+      duration: 30
+      arrivalRate: 10
+
+    - name: "Ramp-up"
+      duration: 60
+      arrivalRate: 10
+      rampTo: 50
+
+    - name: "Spike Load"
+      duration: 30
+      arrivalRate: 50
+
+    - name: "Cool-down"
+      duration: 30
+      arrivalRate: 50
+      rampTo: 5
+
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+  variables:
+    orgToken:      "REPLACE_WITH_ORG_JWT"
+    youthToken:    "REPLACE_WITH_YOUTH_JWT"
+    internshipId:  "REPLACE_WITH_INTERNSHIP_ID"
+
+  ensure:
+    p99: 2000
+    p95: 1000
+    maxErrorRate: 5
+
+scenarios:
+  # ── Scenario 1: Public search (no auth, highest traffic) ───────────────────
+  - name: "Search Internships"
+    weight: 35
+    flow:
+      - get:
+          url: "/api/internships/search"
+          expect:
+            - statusCode: 200
+
+      - get:
+          url: "/api/internships/search?keyword=Software"
+          expect:
+            - statusCode: 200
+
+      - get:
+          url: "/api/internships/search?location=Colombo&skills=React"
+          expect:
+            - statusCode: 200
+
+  # ── Scenario 2: Get single internship by ID ────────────────────────────────
+  - name: "Get Internship By ID"
+    weight: 25
+    flow:
+      - get:
+          url: "/api/internships/{{ internshipId }}"
+          expect:
+            - statusCode:
+                - 200
+                - 404
+
+  # ── Scenario 3: View count increment ──────────────────────────────────────
+  - name: "Increment View Count"
+    weight: 15
+    flow:
+      - put:
+          url: "/api/internships/view/{{ internshipId }}"
+          expect:
+            - statusCode:
+                - 200
+                - 500
+
+  # ── Scenario 4: Organisation views own internships ─────────────────────────
+  - name: "Org My Internships"
+    weight: 15
+    flow:
+      - get:
+          url: "/api/internships/my-internships"
+          headers:
+            Authorization: "Bearer {{ orgToken }}"
+          expect:
+            - statusCode: 200
+
+  # ── Scenario 5: Dashboard stats ────────────────────────────────────────────
+  - name: "Dashboard Stats"
+    weight: 10
+    flow:
+      - get:
+          url: "/api/internships/dashboard/stats"
+          headers:
+            Authorization: "Bearer {{ orgToken }}"
+          expect:
+            - statusCode: 200

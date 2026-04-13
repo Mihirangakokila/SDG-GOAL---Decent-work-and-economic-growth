@@ -26,6 +26,9 @@ jest.mock("../controllers/internshipController.js", () => ({
 
   searchInternshipsController: (req, res) =>
     res.status(200).json({ results: [], total: 0, page: 1 }),
+
+  getNearbyInternshipsController: (req, res) =>
+    res.status(200).json({ internships: [], locationAvailable: true }),
 }));
 
 // ─── Mock middleware ──────────────────────────────────────────────────────────

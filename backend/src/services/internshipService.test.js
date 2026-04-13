@@ -40,6 +40,56 @@ beforeEach(() => {
   emailService.sendInternshipUpdatedEmail.mockResolvedValue(true);
 });
 
+// Update the Internship mock to include proper chaining for populate and other methods
+jest.mock("../models/internship.js", () => {
+  const mockChain = {
+    populate: jest.fn().mockReturnThis(),
+    sort: jest.fn().mockReturnThis(),
+    skip: jest.fn().mockReturnThis(),
+    limit: jest.fn().mockReturnThis(),
+  };
+
+  return {
+    findById: jest.fn().mockReturnValue(mockChain),
+    find: jest.fn().mockReturnValue(mockChain),
+    findOne: jest.fn().mockReturnValue(mockChain),
+    findOneAndUpdate: jest.fn().mockResolvedValue(null),
+    findOneAndDelete: jest.fn().mockResolvedValue(null),
+    findByIdAndUpdate: jest.fn().mockResolvedValue(null),
+    countDocuments: jest.fn().mockResolvedValue(0),
+    create: jest.fn().mockResolvedValue({}),
+    ...mockChain,
+  };
+});
+
+// Update specific test cases to align with the mock behavior
+describe("getInternshipByIdService", () => {
+  test("should return internship by ID", async () => {
+    const mockInternship = {
+      _id: "int1",
+      tittle: "Test Intern",
+      organizationId: { organizationName: "Test Org", name: "Test Name", email: "test@example.com" },
+    };
+
+    Internship.findById.mockReturnValue({
+      populate: jest.fn().mockResolvedValue(mockInternship),
+    });
+
+    const result = await getInternshipByIdService("int1");
+
+    expect(Internship.findById).toHaveBeenCalledWith("int1");
+    expect(result).toEqual(mockInternship);
+  });
+
+  test("should throw error when internship not found", async () => {
+    Internship.findById.mockReturnValue({
+      populate: jest.fn().mockResolvedValue(null),
+    });
+
+    await expect(getInternshipByIdService("bad-id")).rejects.toThrow("Internship not found");
+  });
+});
+
 // ════════════════════════════════════════════════════════════════════════════════
 // CREATE
 // ════════════════════════════════════════════════════════════════════════════════
@@ -201,17 +251,27 @@ describe("deleteInternship", () => {
 // ════════════════════════════════════════════════════════════════════════════════
 describe("getInternshipByIdService", () => {
   test("should return internship by ID", async () => {
-    const mock = { _id: "int1", tittle: "Test Intern" };
-    Internship.findById.mockResolvedValue(mock);
+    const mockInternship = {
+      _id: "int1",
+      tittle: "Test Intern",
+      organizationId: { organizationName: "Test Org", name: "Test Name", email: "test@example.com" },
+    };
+
+    Internship.findById.mockReturnValue({
+      populate: jest.fn().mockResolvedValue(mockInternship),
+    });
 
     const result = await getInternshipByIdService("int1");
 
     expect(Internship.findById).toHaveBeenCalledWith("int1");
-    expect(result).toEqual(mock);
+    expect(result).toEqual(mockInternship);
   });
 
   test("should throw error when internship not found", async () => {
-    Internship.findById.mockResolvedValue(null);
+    Internship.findById.mockReturnValue({
+      populate: jest.fn().mockResolvedValue(null),
+    });
+
     await expect(getInternshipByIdService("bad-id")).rejects.toThrow("Internship not found");
   });
 });
@@ -311,8 +371,9 @@ describe("getDashboardStatsService", () => {
 // ════════════════════════════════════════════════════════════════════════════════
 describe("searchInternshipsService", () => {
   const mockChain = (list) => ({
-    sort:  jest.fn().mockReturnThis(),
-    skip:  jest.fn().mockReturnThis(),
+    populate: jest.fn().mockReturnThis(),
+    sort: jest.fn().mockReturnThis(),
+    skip: jest.fn().mockReturnThis(),
     limit: jest.fn().mockResolvedValue(list),
   });
 

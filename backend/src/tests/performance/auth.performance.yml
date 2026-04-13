@@ -1,0 +1,84 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# Performance Test — Auth API
+# Tool: Artillery.io
+# Usage: npx artillery run src/tests/performance/auth.performance.yml
+#
+# Phases:
+#   Phase 1 - Warm-up:  5 users/sec for 30s
+#   Phase 2 - Ramp-up: ramps from 5 → 30 users/sec over 60s
+#   Phase 3 - Sustained Load: 30 users/sec for 60s
+# ══════════════════════════════════════════════════════════════════════════════
+
+config:
+  target: "http://localhost:5000"
+  phases:
+    - name: "Warm-up"
+      duration: 30
+      arrivalRate: 5
+
+    - name: "Ramp-up"
+      duration: 60
+      arrivalRate: 5
+      rampTo: 30
+
+    - name: "Sustained Load"
+      duration: 60
+      arrivalRate: 30
+
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+  # Thresholds — test fails if these are breached
+  ensure:
+    p99: 1500      # 99th percentile response < 1500ms
+    p95: 800       # 95th percentile response < 800ms
+    maxErrorRate: 5 # Less than 5% error rate
+
+scenarios:
+  # ── Scenario 1: Register + Login flow ──────────────────────────────────────
+  - name: "Register and Login"
+    weight: 40
+    flow:
+      - post:
+          url: "/api/auth/register"
+          json:
+            name: "Load Test User {{ $randomString() }}"
+            email: "loadtest_{{ $randomString() }}@example.com"
+            password: "TestPass123!"
+            role: "youth"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+          expect:
+            - statusCode: 201
+
+  # ── Scenario 2: Login only ─────────────────────────────────────────────────
+  - name: "User Login"
+    weight: 40
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "test@example.com"
+            password: "testpassword123"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+          expect:
+            - statusCode:
+                - 200
+                - 401  # Also valid - incorrect credentials expected in load
+
+  # ── Scenario 3: Get Me (authenticated) ────────────────────────────────────
+  - name: "Get Authenticated User"
+    weight: 20
+    flow:
+      - get:
+          url: "/api/auth/me"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode:
+                - 200
+                - 401
