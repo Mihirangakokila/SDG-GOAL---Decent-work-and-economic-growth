@@ -94,7 +94,21 @@ export default function PostInternshipPage() {
       }
       navigate('/dashboard')
     } catch (err) {
-      toast.error(err.response?.data?.message ?? 'Something went wrong')
+      const msg = err.response?.data?.message ?? ''
+      if (
+        msg.toLowerCase().includes('geo') ||
+        msg.toLowerCase().includes('coordinates') ||
+        msg.toLowerCase().includes('location') ||
+        msg.toLowerCase().includes('point')
+      ) {
+        setErrors(e => ({
+          ...e,
+          location: 'Enter a valid city or place name (e.g. "Colombo, Sri Lanka" or "Remote")',
+        }))
+        toast.error('Invalid location — please enter a recognisable place name.')
+      } else {
+        toast.error(msg || 'Something went wrong')
+      }
     } finally {
       setLoading(false)
     }
@@ -187,8 +201,11 @@ export default function PostInternshipPage() {
                 placeholder="City, Country or Remote"
                 value={form.location}
                 onChange={e => set('location', e.target.value)}
-                className="input"
+                className={`input ${errors.location ? 'border-red-300 ring-2 ring-red-100' : ''}`}
               />
+              {errors.location && (
+                <p className="text-xs text-red-500 mt-1">{errors.location}</p>
+              )}
             </div>
 
             <div>
@@ -234,7 +251,7 @@ export default function PostInternshipPage() {
 
           {form.requiredSkills.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {form.requiredSkills.map((skill, i) => (
+              {form.requiredSkills.map((skill) => (
                 <span key={skill}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
                   {skill}

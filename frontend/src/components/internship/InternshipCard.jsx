@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { MapPin, Clock, Eye, Bookmark, ArrowUpRight } from 'lucide-react'
+import { MapPin, Clock, Eye, ArrowUpRight } from 'lucide-react'
 import { timeAgo, truncate, skillColor, statusBadge } from '../../utils/helpers'
 
 export default function InternshipCard({ internship, showStatus = false }) {
@@ -28,7 +28,7 @@ export default function InternshipCard({ internship, showStatus = false }) {
                            group-hover:text-brand transition-colors line-clamp-1">
               {tittle}
             </h3>
-            <p className="text-sm text-slate-500 mt-0.5 truncate">{orgName}</p>
+            <p className="text-xs text-slate-400 mt-0.5 truncate">By {orgName}</p>
           </div>
         </div>
 

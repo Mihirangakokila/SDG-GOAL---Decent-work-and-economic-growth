@@ -7,9 +7,6 @@ import {
 } from "../utils/emailService.js";
 
 // ─── Helper: fetch organization email + name from the User model ──────────────
-// We need the org's email to send notifications.
-// This assumes your Auth component's User model has { email, organizationName } fields.
-// Adjust the import path to wherever your User model lives in the project.
 import User from "../models/User.js";
 
 const getOrgDetails = async (organizationId) => {
@@ -66,7 +63,6 @@ export const createInternship = async (data, organizationId) => {
   if (internship.status === "Active") {
     const org = await getOrgDetails(organizationId);
     if (org.email) {
-      // Fire-and-forget — await so errors are caught silently inside sendEmail()
       await sendInternshipPostedEmail(org.email, org.name, internship);
     }
   }
@@ -78,7 +74,6 @@ export const createInternship = async (data, organizationId) => {
 // UPDATE
 // ════════════════════════════════════════════════════════════════════════════════
 export const updateInternship = async (data, internshipId, organizationId) => {
-  // Fetch old document BEFORE update so we can detect status transitions
   const oldInternship = await Internship.findOne({ _id: internshipId, organizationId });
 
   if (data.location) {
@@ -105,18 +100,12 @@ export const updateInternship = async (data, internshipId, organizationId) => {
     const oldStatus = oldInternship?.status;
     const newStatus = internship.status;
 
-    // ── EMAIL A: Draft/Active → Active (just published) ──────────────────────
     if (oldStatus !== "Active" && newStatus === "Active") {
       await sendInternshipPostedEmail(org.email, org.name, internship);
-    }
-    // ── EMAIL B: Active → Closed ──────────────────────────────────────────────
-    else if (oldStatus === "Active" && newStatus === "Closed") {
+    } else if (oldStatus === "Active" && newStatus === "Closed") {
       await sendInternshipClosedEmail(org.email, org.name, internship);
-    }
-    // ── EMAIL C: Any other meaningful field change (not just a status flip) ───
-    else {
+    } else {
       const changedFields = detectChangedFields(data);
-      // Only send update email if something other than status changed
       const nonStatusChanges = changedFields.filter((f) => f !== "Status");
       if (nonStatusChanges.length > 0) {
         await sendInternshipUpdatedEmail(org.email, org.name, internship, nonStatusChanges);
@@ -128,7 +117,7 @@ export const updateInternship = async (data, internshipId, organizationId) => {
 };
 
 // ════════════════════════════════════════════════════════════════════════════════
-// DELETE  (no email needed — org initiated it themselves)
+// DELETE
 // ════════════════════════════════════════════════════════════════════════════════
 export const deleteInternship = async (internshipId, organizationId) => {
   const internship = await Internship.findOneAndDelete({ _id: internshipId, organizationId });
@@ -136,10 +125,11 @@ export const deleteInternship = async (internshipId, organizationId) => {
 };
 
 // ════════════════════════════════════════════════════════════════════════════════
-// GET SINGLE
+// GET SINGLE — populate org name for detail page
 // ════════════════════════════════════════════════════════════════════════════════
 export const getInternshipByIdService = async (internshipId) => {
-  const internship = await Internship.findById(internshipId);
+  const internship = await Internship.findById(internshipId)
+    .populate("organizationId", "organizationName name email");
   if (!internship) throw new Error("Internship not found");
   return internship;
 };
@@ -175,18 +165,15 @@ export const incrementViewCountService = async (internshipId) => {
 // ════════════════════════════════════════════════════════════════════════════════
 export const getDashboardStatsService = async (organizationId) => {
   const totalInternships  = await Internship.countDocuments({ organizationId });
-  const activeInternships = await Internship.countDocuments({ organizationId, status: "Active"  });
-  const closedInternships = await Internship.countDocuments({ organizationId, status: "Closed"  });
+  const activeInternships = await Internship.countDocuments({ organizationId, status: "Active" });
+  const closedInternships = await Internship.countDocuments({ organizationId, status: "Closed" });
 
   const internships = await Internship.find({ organizationId });
 
-  const totalViews = internships.reduce((sum, i) => sum + i.viewCount, 0);
-
-  // Fixed: use totalApplicants (capital A) — update schema field name to match
-  const totalApplicants = internships.reduce((sum, i) => sum + (i.totalApplicants ?? 0), 0);
-  const acceptedCount   = internships.reduce((sum, i) => sum + (i.acceptedCount    ?? 0), 0);
-
-  const acceptanceRate =
+  const totalViews      = internships.reduce((sum, i) => sum + i.viewCount, 0);
+  const totalApplicants = internships.reduce((sum, i) => sum + (i.totalapplicants ?? 0), 0);
+  const acceptedCount   = internships.reduce((sum, i) => sum + (i.acceptedCount   ?? 0), 0);
+  const acceptanceRate  =
     totalApplicants > 0
       ? ((acceptedCount / totalApplicants) * 100).toFixed(2)
       : 0;
@@ -202,7 +189,7 @@ export const getDashboardStatsService = async (organizationId) => {
 };
 
 // ════════════════════════════════════════════════════════════════════════════════
-// SEARCH
+// SEARCH — populate org name so InternshipCard can show "By OrgName"
 // ════════════════════════════════════════════════════════════════════════════════
 export const searchInternshipsService = async (queryParams) => {
   const {
@@ -211,10 +198,10 @@ export const searchInternshipsService = async (queryParams) => {
     education,
     status,
     location,
-    page    = 1,
-    limit   = 10,
-    sortBy  = "createdAt",
-    order   = "desc",
+    page   = 1,
+    limit  = 10,
+    sortBy = "createdAt",
+    order  = "desc",
   } = queryParams;
 
   const filter = {};
@@ -248,6 +235,7 @@ export const searchInternshipsService = async (queryParams) => {
   const sortOrder = order === "asc" ? 1 : -1;
 
   const internships = await Internship.find(filter)
+    .populate("organizationId", "organizationName name")  // ← added
     .sort({ [sortBy]: sortOrder })
     .skip(skip)
     .limit(parseInt(limit));
@@ -260,4 +248,28 @@ export const searchInternshipsService = async (queryParams) => {
     totalPages: Math.ceil(total / limit),
     internships,
   };
+};
+
+// ════════════════════════════════════════════════════════════════════════════════
+// GET NEARBY — populate org name so NearbyCard can show "By OrgName"
+// ════════════════════════════════════════════════════════════════════════════════
+export const getNearbyInternshipsService = async (lng, lat, radiusKm = 50, limit = 10) => {
+  if (lng == null || lat == null) return [];
+
+  const radiusInRadians = radiusKm / 6378.1;
+
+  const internships = await Internship.find({
+    status: "Active",
+    "coordinates.coordinates": { $exists: true },
+    coordinates: {
+      $geoWithin: {
+        $centerSphere: [[lng, lat], radiusInRadians],
+      },
+    },
+  })
+    .populate("organizationId", "organizationName name")  // ← added
+    .sort({ createdAt: -1 })
+    .limit(limit);
+
+  return internships;
 };

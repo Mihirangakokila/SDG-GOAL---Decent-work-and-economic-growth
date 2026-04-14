@@ -1,16 +1,31 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { internshipsAPI } from '../services/api'
+import { internshipsAPI, applicationsAPI } from '../services/api'
 import {
   MapPin, Clock, Eye, Briefcase, GraduationCap,
-  ArrowLeft, CalendarDays, Share2, BookmarkPlus, Loader2
+  ArrowLeft, CalendarDays, Share2, BookmarkPlus, BookmarkCheck, Loader2, X
 } from 'lucide-react'
 import { formatDate, skillColor, statusBadge } from '../utils/helpers'
+
+const STORAGE_KEY = 'savedInternships'
+
+const getSaved = () => JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
 
 export default function InternshipDetailPage() {
   const { id } = useParams()
   const [internship, setInternship] = useState(null)
-  const [loading,    setLoading]    = useState(true)
+  const [loading, setLoading] = useState(true)
+
+  const [isSaved, setIsSaved] = useState(() => getSaved().includes(id))
+  const [copyFeedback, setCopyFeedback] = useState(false)
+
+  const [showApplyModal, setShowApplyModal] = useState(false)
+  const [applyForm, setApplyForm] = useState({ name: '', email: '', phone: '', cv: null })
+  const [submittingApply, setSubmittingApply] = useState(false)
+  const [applyError, setApplyError] = useState('')
+  const [applySuccess, setApplySuccess] = useState(false)
+  const [applicationData, setApplicationData] = useState(null)
+  const [showScore, setShowScore] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -26,6 +41,66 @@ export default function InternshipDetailPage() {
     }
     load()
   }, [id])
+
+  const handleSave = () => {
+    const saved = getSaved()
+    let updated
+    if (saved.includes(id)) {
+      updated = saved.filter(s => s !== id)
+      setIsSaved(false)
+    } else {
+      updated = [...saved, id]
+      setIsSaved(true)
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+  }
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      setCopyFeedback(true)
+      setTimeout(() => setCopyFeedback(false), 2000)
+    } catch {
+      window.prompt('Copy this link:', window.location.href)
+    }
+  }
+
+  const handleApplySubmit = async (e) => {
+    e.preventDefault()
+    setApplyError('')
+
+    if (!applyForm.name.trim()) {
+      return setApplyError('Full Name is required.')
+    }
+    if (!applyForm.email.toLowerCase().endsWith('@gmail.com')) {
+      return setApplyError('Email must be a @gmail.com address.')
+    }
+    const phoneRegex = /^\d{10}$/
+    if (!phoneRegex.test(applyForm.phone)) {
+      return setApplyError('Phone number must be exactly 10 digits.')
+    }
+
+    setSubmittingApply(true)
+
+    try {
+      const formData = new FormData()
+      formData.append('name', applyForm.name)
+      formData.append('email', applyForm.email)
+      formData.append('phoneNumber', applyForm.phone)
+      if (applyForm.cv) {
+        formData.append('cv', applyForm.cv)
+      }
+
+      const response = await applicationsAPI.apply(id, formData)
+      setApplicationData(response.data.data)
+      setApplySuccess(true)
+      setShowScore(false)
+    } catch (err) {
+      setApplyError(err.response?.data?.message || 'Failed to submit application. Please try again.')
+    } finally {
+      setSubmittingApply(false)
+    }
+  }
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[60vh]">
@@ -128,7 +203,10 @@ export default function InternshipDetailPage() {
               Apply before this listing closes. Reach out to the organization directly.
             </p>
             {status === 'Active' ? (
-              <button className="btn-primary w-full justify-center text-base py-3">
+              <button
+                onClick={() => setShowApplyModal(true)}
+                className="btn-primary w-full justify-center text-base py-3"
+              >
                 Apply Now
               </button>
             ) : (
@@ -136,12 +214,25 @@ export default function InternshipDetailPage() {
                 Applications Closed
               </div>
             )}
+
             <div className="flex gap-2 mt-3">
-              <button className="btn-secondary flex-1 justify-center text-sm gap-1.5">
-                <BookmarkPlus size={14} /> Save
+              <button
+                onClick={handleSave}
+                className={`btn-secondary flex-1 justify-center text-sm gap-1.5 transition-colors ${
+                  isSaved ? 'text-brand border-brand/40 bg-brand/5' : ''
+                }`}
+              >
+                {isSaved
+                  ? <><BookmarkCheck size={14} className="fill-brand stroke-brand" /> Saved</>
+                  : <><BookmarkPlus size={14} /> Save</>
+                }
               </button>
-              <button className="btn-secondary flex-1 justify-center text-sm gap-1.5">
-                <Share2 size={14} /> Share
+              <button
+                onClick={handleShare}
+                className="btn-secondary flex-1 justify-center text-sm gap-1.5"
+              >
+                <Share2 size={14} />
+                {copyFeedback ? 'Copied!' : 'Share'}
               </button>
             </div>
           </div>
@@ -150,10 +241,10 @@ export default function InternshipDetailPage() {
           <div className="card p-6 space-y-4 animate-fade-up" style={{ animationDelay: '0.1s' }}>
             <h3 className="font-display font-semibold text-navy-900">Quick Info</h3>
             {[
-              { label: 'Duration',   value: duration          },
-              { label: 'Location',   value: location          },
-              { label: 'Education',  value: requiredEducation },
-              { label: 'Status',     value: status            },
+              { label: 'Duration', value: duration },
+              { label: 'Location', value: location },
+              { label: 'Education', value: requiredEducation },
+              { label: 'Status', value: status },
             ].filter(r => r.value).map(({ label, value }) => (
               <div key={label} className="flex items-start justify-between gap-2">
                 <span className="text-xs text-slate-400 font-medium uppercase tracking-wide">{label}</span>
@@ -175,6 +266,169 @@ export default function InternshipDetailPage() {
           </Link>
         </div>
       </div>
+
+      {/* Apply Modal */}
+      {showApplyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-900/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg p-6 md:p-8 animate-fade-up shadow-2xl overflow-y-auto max-h-[90vh]">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-display font-bold text-xl text-navy-900">Apply for Internship</h2>
+              <button onClick={() => setShowApplyModal(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                <X size={24} />
+              </button>
+            </div>
+
+            {applySuccess ? (
+              <div className="text-center py-8 animate-fade-up">
+                {!showScore ? (
+                  <>
+                    <div className="w-16 h-16 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <h3 className="font-display font-bold text-xl text-navy-900 mb-2">Application Submitted!</h3>
+                    <p className="text-slate-500 mb-6">Your application has been successfully sent to the organization.</p>
+                    <div className="flex gap-3">
+                      <button onClick={() => setShowApplyModal(false)} className="btn-secondary flex-1 justify-center">
+                        Close
+                      </button>
+                      <button onClick={() => setShowScore(true)} className="btn-primary flex-1 justify-center bg-indigo-600 hover:bg-indigo-700 text-white">
+                        View Matching Score
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="animate-fade-up text-left">
+                    <div className="flex justify-center mb-6">
+                      <div className="relative w-32 h-32">
+                        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                          <path
+                            className="text-slate-100"
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                          />
+                          <path
+                            className={`${applicationData?.eligibilityScore >= 70 ? 'text-green-500' : applicationData?.eligibilityScore >= 40 ? 'text-yellow-500' : 'text-red-500'}`}
+                            strokeDasharray={`${applicationData?.eligibilityScore || 0}, 100`}
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <span className="text-3xl font-display font-bold text-navy-900">{applicationData?.eligibilityScore || 0}%</span>
+                          <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Match</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <h3 className="font-display font-bold text-xl text-navy-900 mb-4 text-center">Eligibility Breakdown</h3>
+
+                    {applicationData?.scoreBreakdown && (
+                      <div className="space-y-3 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        {Object.entries(applicationData.scoreBreakdown).map(([key, value]) => (
+                          <div key={key} className="flex justify-between items-center">
+                            <span className="text-sm font-medium text-slate-600 capitalize">{key}</span>
+                            <span className="text-sm font-bold text-navy-900">{value}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {applicationData?.aiReasoning && (
+                      <div className="mb-6 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+                        <p className="text-xs font-semibold text-indigo-800 uppercase tracking-wider mb-2">AI Reasoning</p>
+                        <p className="text-sm text-slate-600 leading-relaxed">{applicationData.aiReasoning}</p>
+                      </div>
+                    )}
+
+                    <button onClick={() => setShowApplyModal(false)} className="btn-primary justify-center w-full">
+                      Close
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <form onSubmit={handleApplySubmit} className="space-y-4">
+                {applyError && (
+                  <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-medium">
+                    {applyError}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    className="form-input w-full"
+                    placeholder="John Doe"
+                    value={applyForm.name}
+                    onChange={(e) => setApplyForm({ ...applyForm, name: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Email *</label>
+                  <input
+                    type="email"
+                    required
+                    className="form-input w-full"
+                    placeholder="john@gmail.com"
+                    value={applyForm.email}
+                    onChange={(e) => setApplyForm({ ...applyForm, email: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Phone Number *</label>
+                  <input
+                    type="tel"
+                    required
+                    className="form-input w-full"
+                    placeholder="0712345678"
+                    value={applyForm.phone}
+                    onChange={(e) => setApplyForm({ ...applyForm, phone: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Upload CV *</label>
+                  <input
+                    type="file"
+                    required
+                    accept=".pdf,.doc,.docx"
+                    className="block w-full text-sm text-slate-500
+                      file:mr-4 file:py-2.5 file:px-4
+                      file:rounded-xl file:border-0
+                      file:text-sm file:font-semibold
+                      file:bg-brand/10 file:text-brand
+                      hover:file:bg-brand/20 transition-colors cursor-pointer"
+                    onChange={(e) => setApplyForm({ ...applyForm, cv: e.target.files[0] })}
+                  />
+                  <p className="mt-1 text-xs text-slate-400">PDF, DOC, or DOCX (Max 5MB)</p>
+                </div>
+
+                <div className="pt-4 flex gap-3">
+                  <button type="button" onClick={() => setShowApplyModal(false)} className="btn-secondary flex-1 justify-center">
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={submittingApply} className="btn-primary flex-1 justify-center disabled:opacity-70 disabled:cursor-not-allowed">
+                    {submittingApply ? (
+                      <><Loader2 size={16} className="animate-spin mr-2" /> Submitting...</>
+                    ) : 'Submit Application'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

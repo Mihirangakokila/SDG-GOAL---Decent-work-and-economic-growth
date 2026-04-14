@@ -1,4 +1,5 @@
 import YouthProfile from "../models/YouthProfile.js";
+import { getCoordinates } from "../utils/geocode.js";
 import {
   calculateProfileCompleteness,
   calculateProfileStrength,
@@ -9,8 +10,29 @@ import {
   createVersionSnapshot,
 } from "../services/profileService.js";
 
-// Create a new youth profile
-// POST /profile
+// ─── Helper: build a location string from district + province ────────────────
+const buildLocationString = ({ district, provinceOrState }) => {
+  const parts = [district, provinceOrState].filter(Boolean);
+  return parts.length > 0 ? parts.join(", ") : null;
+};
+
+// ─── Helper: attempt geocoding and return a coordinates sub-doc or null ───────
+const geocodeProfile = async (payload) => {
+  const locationStr = buildLocationString(payload);
+  if (!locationStr) return null;
+
+  const coords = await getCoordinates(locationStr);
+  if (!coords) return null;
+
+  return {
+    type: "Point",
+    coordinates: [coords.lng, coords.lat],
+  };
+};
+
+// ════════════════════════════════════════════════════════════════════════════════
+// CREATE  POST /profile
+// ════════════════════════════════════════════════════════════════════════════════
 export const createProfile = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -48,6 +70,12 @@ export const createProfile = async (req, res) => {
       documents: [],
     };
 
+    // ── Geocode the youth's location ──────────────────────────────────────────
+    const geoCoords = await geocodeProfile(payload);
+    if (geoCoords) {
+      payload.coordinates = geoCoords;
+    }
+
     const completeness = calculateProfileCompleteness(payload);
     const { level, score: strengthScore } = calculateProfileStrength(payload);
     const { eligibilityScore, participationEligibility } = calculateEligibility(
@@ -76,8 +104,9 @@ export const createProfile = async (req, res) => {
   }
 };
 
-// Get a profile by userId
-// GET /profile/:userId
+// ════════════════════════════════════════════════════════════════════════════════
+// GET BY USER ID  GET /profile/:userId
+// ════════════════════════════════════════════════════════════════════════════════
 export const getProfileByUserId = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -100,7 +129,6 @@ export const getProfileByUserId = async (req, res) => {
       return res.status(403).json({ message: "Not authorized to view this profile" });
     }
 
-    // Organizations see a summary; admins and owners see full profile
     if (isOrg && !isOwner && !isAdmin) {
       const summary = {
         id: profile._id,
@@ -125,8 +153,9 @@ export const getProfileByUserId = async (req, res) => {
   }
 };
 
-// Get profiles list
-// GET /profiles
+// ════════════════════════════════════════════════════════════════════════════════
+// GET ALL  GET /profiles
+// ════════════════════════════════════════════════════════════════════════════════
 export const getProfiles = async (req, res) => {
   try {
     const requester = req.user;
@@ -135,11 +164,9 @@ export const getProfiles = async (req, res) => {
     let projection = null;
 
     if (requester.role === "admin") {
-      // Admin sees all profiles
       query = {};
       projection = null;
     } else if (requester.role === "organization") {
-      // Organizations see summaries of all youth profiles
       projection = {
         fullName: 1,
         district: 1,
@@ -153,7 +180,6 @@ export const getProfiles = async (req, res) => {
         user: 1,
       };
     } else if (requester.role === "youth") {
-      // Youth sees only own profile via this endpoint
       query = { user: requester._id };
     } else {
       return res.status(403).json({ message: "Not authorized to view profiles" });
@@ -171,8 +197,9 @@ export const getProfiles = async (req, res) => {
   }
 };
 
-// Update profile
-// PUT /profile/:userId
+// ════════════════════════════════════════════════════════════════════════════════
+// UPDATE  PUT /profile/:userId
+// ════════════════════════════════════════════════════════════════════════════════
 export const updateProfile = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -198,7 +225,6 @@ export const updateProfile = async (req, res) => {
       });
     }
 
-    // Update fields if provided
     const updatableFields = [
       "fullName",
       "contactNumber",
@@ -225,7 +251,6 @@ export const updateProfile = async (req, res) => {
       }
     });
 
-    // Education fields
     if (!profile.education) profile.education = {};
     const eduFields = [
       "highestQualification",
@@ -238,6 +263,17 @@ export const updateProfile = async (req, res) => {
         profile.education[field] = req.body[field];
       }
     });
+
+    // ── Re-geocode if district or provinceOrState changed ─────────────────────
+    if (req.body.district !== undefined || req.body.provinceOrState !== undefined) {
+      const geoCoords = await geocodeProfile({
+        district: profile.district,
+        provinceOrState: profile.provinceOrState,
+      });
+      if (geoCoords) {
+        profile.coordinates = geoCoords;
+      }
+    }
 
     const completeness = calculateProfileCompleteness(profile);
     const { level, score: strengthScore } = calculateProfileStrength(profile);
@@ -267,8 +303,9 @@ export const updateProfile = async (req, res) => {
   }
 };
 
-// Upload or update CV / documents (metadata only)
-// POST /profile/:userId/upload-cv
+// ════════════════════════════════════════════════════════════════════════════════
+// UPLOAD CV  POST /profile/:userId/upload-cv
+// ════════════════════════════════════════════════════════════════════════════════
 export const uploadCv = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -293,14 +330,7 @@ export const uploadCv = async (req, res) => {
       return res.status(400).json({ message });
     }
 
-    const doc = {
-      fileName,
-      url,
-      sizeInBytes,
-      uploadedAt: new Date(),
-    };
-
-    profile.documents.push(doc);
+    profile.documents.push({ fileName, url, sizeInBytes, uploadedAt: new Date() });
     await profile.save();
 
     return res.status(200).json({
@@ -313,8 +343,9 @@ export const uploadCv = async (req, res) => {
   }
 };
 
-// Delete profile
-// DELETE /profile/:userId
+// ════════════════════════════════════════════════════════════════════════════════
+// DELETE  DELETE /profile/:userId
+// ════════════════════════════════════════════════════════════════════════════════
 export const deleteProfile = async (req, res) => {
   try {
     const { userId } = req.params;
