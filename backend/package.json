@@ -45,7 +45,8 @@
     "node-fetch": "^3.3.2",
     "nodemailer": "^8.0.4",
     "pdf-parse": "^2.4.5",
-    "pdfjs-dist": "^4.10.38"
+    "pdfjs-dist": "^4.10.38",
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.23.0",

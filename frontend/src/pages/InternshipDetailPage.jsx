@@ -6,6 +6,7 @@ import {
   ArrowLeft, CalendarDays, Share2, BookmarkPlus, BookmarkCheck, Loader2, X
 } from 'lucide-react'
 import { formatDate, skillColor, statusBadge } from '../utils/helpers'
+import MessageButton from '../components/messaging/MessageButton'
 
 const STORAGE_KEY = 'savedInternships'
 
@@ -118,7 +119,7 @@ export default function InternshipDetailPage() {
   const {
     tittle, description, location, duration, status,
     requiredSkills = [], requiredEducation, viewCount,
-    createdAt, organizationId
+    createdAt, organizationId, postedBy
   } = internship
 
   const orgName = organizationId?.organizationName ?? organizationId?.name ?? 'Organization'
@@ -202,6 +203,7 @@ export default function InternshipDetailPage() {
             <p className="text-sm text-slate-500 mb-5">
               Apply before this listing closes. Reach out to the organization directly.
             </p>
+
             {status === 'Active' ? (
               <button
                 onClick={() => setShowApplyModal(true)}
@@ -212,6 +214,18 @@ export default function InternshipDetailPage() {
             ) : (
               <div className="w-full py-3 text-center rounded-xl bg-slate-100 text-slate-400 text-sm font-medium">
                 Applications Closed
+              </div>
+            )}
+
+            {/* Message Button */}
+            {postedBy && (
+              <div className="mt-3">
+                <MessageButton
+                  targetUserId={postedBy}
+                  targetUserName={orgName}
+                  internshipId={internship._id}
+                  internshipTitle={tittle}
+                />
               </div>
             )}
 

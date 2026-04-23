@@ -8,7 +8,13 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
-      }
+      },
+      // FIX: proxy /socket.io WebSocket upgrades through Vite dev server
+      '/socket.io': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        ws: true,  // <-- this is what enables WebSocket proxying
+      },
     }
   }
 })
