@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Search, MapPin, ArrowRight, Briefcase, Users, TrendingUp,
-  Star, ChevronRight, Zap, Shield, Globe
+  Star, ChevronRight, Zap, Shield, Globe, Navigation
 } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
+import { internshipsAPI } from '../services/api'
 
 const POPULAR_SKILLS = ['React', 'Python', 'Data Analysis', 'UI/UX Design', 'Machine Learning', 'Node.js', 'Java', 'Marketing']
 
@@ -43,7 +45,28 @@ const HOW_IT_WORKS = [
 export default function HomePage() {
   const [keyword,  setKeyword]  = useState('')
   const [location, setLocation] = useState('')
+  const [nearbyInternships, setNearbyInternships] = useState([])
+  const [nearbyLoading, setNearbyLoading] = useState(false)
+  const [locationAvailable, setLocationAvailable] = useState(false)
+
   const navigate = useNavigate()
+  const { user } = useAuth()
+
+  // ── Fetch nearby internships for youth users ──────────────────────────────
+  useEffect(() => {
+    if (user?.role !== 'youth') return
+
+    setNearbyLoading(true)
+    internshipsAPI.getNearby({ radius: 50, limit: 6 })
+      .then(res => {
+        setNearbyInternships(res.data.internships || [])
+        setLocationAvailable(res.data.locationAvailable)
+      })
+      .catch(() => {
+        // Silently fail — section simply won't show
+      })
+      .finally(() => setNearbyLoading(false))
+  }, [user])
 
   const handleSearch = (e) => {
     e.preventDefault()
@@ -137,6 +160,64 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── Nearby Internships (youth only) ──────────────────────────────────── */}
+      {user?.role === 'youth' && (
+        <section className="py-16 bg-gradient-to-b from-blue-50 to-white">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Navigation size={16} className="text-brand" />
+                  <p className="text-brand text-sm font-semibold uppercase tracking-widest">Near You</p>
+                </div>
+                <h2 className="section-title">Internships in Your Area</h2>
+                {locationAvailable && (
+                  <p className="text-slate-500 text-sm mt-1">Active opportunities within 50 km of your profile location</p>
+                )}
+              </div>
+              <Link to="/internships" className="btn-secondary text-sm hidden sm:inline-flex">
+                View all <ChevronRight size={14} />
+              </Link>
+            </div>
+
+            {nearbyLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="card p-6 animate-pulse">
+                    <div className="h-4 bg-slate-200 rounded w-3/4 mb-3" />
+                    <div className="h-3 bg-slate-100 rounded w-1/2 mb-2" />
+                    <div className="h-3 bg-slate-100 rounded w-2/3" />
+                  </div>
+                ))}
+              </div>
+            ) : !locationAvailable ? (
+              <div className="card p-8 text-center">
+                <MapPin size={32} className="text-slate-300 mx-auto mb-3" />
+                <p className="font-semibold text-slate-700 mb-1">Location not set</p>
+                <p className="text-slate-500 text-sm mb-4">
+                  Add your district and province to your profile to see nearby internships highlighted here.
+                </p>
+                <Link to="/profile" className="btn-primary text-sm">
+                  Update Profile
+                </Link>
+              </div>
+            ) : nearbyInternships.length === 0 ? (
+              <div className="card p-8 text-center">
+                <Briefcase size={32} className="text-slate-300 mx-auto mb-3" />
+                <p className="font-semibold text-slate-700 mb-1">No nearby internships right now</p>
+                <p className="text-slate-500 text-sm">Check back soon, or browse all available listings.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {nearbyInternships.map(internship => (
+                  <NearbyCard key={internship._id} internship={internship} />
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* ── Features ─────────────────────────────────────────────────────── */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-6">
@@ -216,5 +297,56 @@ export default function HomePage() {
       </section>
 
     </div>
+  )
+}
+
+// ── Nearby internship card ────────────────────────────────────────────────────
+function NearbyCard({ internship }) {
+  return (
+    <Link
+      to={`/internships/${internship._id}`}
+      className="card p-6 hover:-translate-y-1 transition-transform border-2 border-blue-100 hover:border-brand/40 group relative overflow-hidden"
+    >
+      {/* "Nearby" badge */}
+      <span className="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
+        <Navigation size={10} /> Nearby
+      </span>
+
+      <div className="flex items-start gap-3 mb-3 pr-16">
+        <div className="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center flex-shrink-0">
+          <Briefcase size={18} />
+        </div>
+        <div className="min-w-0">
+          <h3 className="font-display font-semibold text-navy-900 text-sm leading-snug group-hover:text-brand transition-colors truncate">
+            {internship.tittle}
+          </h3>
+          {internship.location && (
+            <p className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
+              <MapPin size={11} /> {internship.location}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {internship.requiredSkills?.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-3">
+          {internship.requiredSkills.slice(0, 3).map(skill => (
+            <span key={skill}
+              className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-xs">
+              {skill}
+            </span>
+          ))}
+          {internship.requiredSkills.length > 3 && (
+            <span className="px-2 py-0.5 bg-slate-100 text-slate-400 rounded-full text-xs">
+              +{internship.requiredSkills.length - 3}
+            </span>
+          )}
+        </div>
+      )}
+
+      {internship.duration && (
+        <p className="text-xs text-slate-400 mt-3">{internship.duration}</p>
+      )}
+    </Link>
   )
 }

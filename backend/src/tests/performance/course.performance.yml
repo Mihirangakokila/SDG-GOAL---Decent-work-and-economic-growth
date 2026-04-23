@@ -1,0 +1,97 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# Performance Test — Course API
+# Tool: Artillery.io
+# Usage: npx artillery run src/tests/performance/course.performance.yml
+#
+# Prerequisites:
+#   • Set ORG_TOKEN to a valid organisation JWT
+#   • Set COURSE_ID to an existing course ID
+#
+# Phases:
+#   Phase 1 - Warm-up:  5 users/sec for 30s
+#   Phase 2 - Ramp-up: ramps from 5 → 20 users/sec over 60s
+#   Phase 3 - Peak Load: 20 users/sec for 60s
+# ══════════════════════════════════════════════════════════════════════════════
+
+config:
+  target: "http://localhost:5000"
+  phases:
+    - name: "Warm-up"
+      duration: 30
+      arrivalRate: 5
+
+    - name: "Ramp-up"
+      duration: 60
+      arrivalRate: 5
+      rampTo: 20
+
+    - name: "Peak Load"
+      duration: 60
+      arrivalRate: 20
+
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+  variables:
+    orgToken:  "REPLACE_WITH_ORG_JWT"
+    courseId:  "REPLACE_WITH_COURSE_ID"
+
+  ensure:
+    p99: 1500
+    p95: 800
+    maxErrorRate: 5
+
+scenarios:
+  # ── Scenario 1: Public course listing (high volume) ────────────────────────
+  - name: "List All Courses"
+    weight: 40
+    flow:
+      - get:
+          url: "/api/courses"
+          expect:
+            - statusCode: 200
+
+  # ── Scenario 2: Course search / filter ────────────────────────────────────
+  - name: "Search Courses by Type"
+    weight: 25
+    flow:
+      - get:
+          url: "/api/courses?type=Online"
+          expect:
+            - statusCode: 200
+
+      - get:
+          url: "/api/courses?q=JavaScript"
+          expect:
+            - statusCode: 200
+
+  # ── Scenario 3: Organisation views own courses ─────────────────────────────
+  - name: "Org My Courses"
+    weight: 20
+    flow:
+      - get:
+          url: "/api/courses/my"
+          headers:
+            Authorization: "Bearer {{ orgToken }}"
+          expect:
+            - statusCode: 200
+
+  # ── Scenario 4: Create course (write load) ─────────────────────────────────
+  - name: "Create Course"
+    weight: 15
+    flow:
+      - post:
+          url: "/api/courses"
+          headers:
+            Authorization: "Bearer {{ orgToken }}"
+          json:
+            title: "Perf Test Course {{ $randomString() }}"
+            type: "Online"
+            link: "https://example.com/perf-course"
+            description: "Performance test course"
+          expect:
+            - statusCode:
+                - 201
+                - 400
+                - 401

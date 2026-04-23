@@ -36,7 +36,18 @@ const youthProfileSchema = new mongoose.Schema(
     district: { type: String, trim: true },
     provinceOrState: { type: String, trim: true },
     ruralAreaFlag: { type: Boolean, default: false },
-
+    // ── Geo location (auto-populated from district + provinceOrState on create/update) ──
+    coordinates: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point",
+      },
+      coordinates: {
+        type: [Number], // [longitude, latitude]
+        default: undefined,
+      },
+    },
     // Education
     education: {
       highestQualification: { type: String, trim: true },
@@ -100,6 +111,9 @@ const youthProfileSchema = new mongoose.Schema(
     collection: "YouthProfile",
   }
 );
+
+// 2dsphere index enables $geoNear / $geoWithin queries on youth locations
+youthProfileSchema.index({ coordinates: "2dsphere" });
 
 const YouthProfile = mongoose.model("YouthProfile", youthProfileSchema);
 

@@ -1,7 +1,7 @@
-import client from './client.js';
+import api from '../services/api.js';
 
-export const getCoursesApi = (params) => client.get('/courses', params ? { params } : undefined);
-export const createCourseApi = (payload) => client.post('/courses', payload);
-export const getMyCoursesApi = () => client.get('/courses/my');
-export const updateCourseApi = (id, payload) => client.put(`/courses/${id}`, payload);
-export const deleteCourseApi = (id) => client.delete(`/courses/${id}`);
+export const getCoursesApi    = (params)       => api.get('/courses',         params ? { params } : undefined);
+export const createCourseApi  = (payload)      => api.post('/courses',        payload);
+export const getMyCoursesApi  = ()             => api.get('/courses/my');
+export const updateCourseApi  = (id, payload)  => api.put(`/courses/${id}`,   payload);
+export const deleteCourseApi  = (id)           => api.delete(`/courses/${id}`);

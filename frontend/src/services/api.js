@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL  || '/api'  ,
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -33,24 +33,26 @@ export const authAPI = {
 
 // ── Internships ──────────────────────────────────────────────────────────────
 export const internshipsAPI = {
-  search:        (params) => api.get('/internships/search',         { params }),
-  getById:       (id)     => api.get(`/internships/${id}`),
-  getMine:       (params) => api.get('/internships/my-internships', { params }),
-  create:        (data)   => api.post('/internships',               data),
-  update:        (id, data) => api.put(`/internships/${id}`,        data),
-  delete:        (id)     => api.delete(`/internships/${id}`),
-  incrementView: (id)     => api.put(`/internships/view/${id}`),
-  dashboard:     ()       => api.get('/internships/dashboard/stats'),
+  search:        (params)   => api.get('/internships/search',         { params }),
+  getById:       (id)       => api.get(`/internships/${id}`),
+  getMine:       (params)   => api.get('/internships/my-internships', { params }),
+  create:        (data)     => api.post('/internships',               data),
+  update:        (id, data) => api.put(`/internships/${id}`,          data),
+  delete:        (id)       => api.delete(`/internships/${id}`),
+  incrementView: (id)       => api.put(`/internships/view/${id}`),
+  dashboard:     ()         => api.get('/internships/dashboard/stats'),
   getApplicationsByInternship: (id) => api.get(`/applications/internship/${id}`),
+  getNearby:     (params = {}) => api.get('/internships/nearby', { params }),
+  // getNearby params: { radius?: number (km, default 50), limit?: number (default 10) }
 }
 
 // ── Applications ─────────────────────────────────────────────────────────────
 export const applicationsAPI = {
-  apply: (internshipId, formData) => api.post(`/applications/apply/${internshipId}`, formData, {
+  apply:    (internshipId, formData) => api.post(`/applications/apply/${internshipId}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
-  getMine: () => api.get('/applications/my-applications'),
-  update: (id, formData) => api.put(`/applications/${id}`, formData, {
+  getMine:  () => api.get('/applications/my-applications'),
+  update:   (id, formData) => api.put(`/applications/${id}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
   withdraw: (id) => api.delete(`/applications/${id}`)
