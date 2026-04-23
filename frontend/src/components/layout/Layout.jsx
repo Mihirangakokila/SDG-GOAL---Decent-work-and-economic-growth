@@ -1,9 +1,10 @@
 import { Outlet } from 'react-router-dom'
-import Navbar from './Navbar'
-import Footer from './Footer'
+import Navbar  from './Navbar'
+import Footer  from './Footer'
+import ChatBot from '../chatbot/ChatBot'
 
-// ── Replace this with your real WhatsApp number (with country code, no + or spaces)
-// Example: Sri Lanka +94 77 123 4567 → 94771234567
+// ── Replace with your real WhatsApp number (country code, no + or spaces)
+// Sri Lanka example: +94 77 123 4567 → 94771234567
 const WHATSAPP_NUMBER  = '94714950456'
 const WHATSAPP_MESSAGE = 'Hi! I need guidance on finding an internship through InternHub.'
 
@@ -18,7 +19,10 @@ export default function Layout() {
       </main>
       <Footer />
 
-      {/* ── Floating WhatsApp button ─────────────────────────── */}
+      {/* ── AI Chatbot — bottom right, left of WhatsApp ──────────── */}
+      <ChatBot />
+
+      {/* ── WhatsApp floating button ─────────────────────────────── */}
       <a
         href={whatsappUrl}
         target="_blank"
@@ -30,7 +34,7 @@ export default function Layout() {
                    transition-all duration-200 group
                    px-4 py-3"
       >
-        {/* WhatsApp SVG icon */}
+        {/* WhatsApp SVG */}
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
@@ -56,7 +60,7 @@ export default function Layout() {
                    s10 4.477 10 10-4.477 10-10 10z"/>
         </svg>
 
-        {/* Label — visible on hover (desktop) / always visible (mobile) */}
+        {/* Label on hover */}
         <span className="text-sm font-semibold whitespace-nowrap
                          max-w-0 overflow-hidden group-hover:max-w-xs
                          transition-all duration-300 sm:block hidden">
