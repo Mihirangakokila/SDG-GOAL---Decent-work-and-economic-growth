@@ -3,8 +3,10 @@ import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
   Briefcase, Menu, X, ChevronDown,
-  LayoutDashboard, LogOut, User, PlusCircle, Building2, GraduationCap, BookmarkCheck
+  LayoutDashboard, LogOut, User, PlusCircle, Building2, GraduationCap, BookmarkCheck,
+  MessageSquare
 } from 'lucide-react'
+import UnreadBadge from '../messaging/UnreadBadge'
 
 export default function Navbar() {
   const { user, logout, isOrg, isAdmin } = useAuth()
@@ -78,6 +80,18 @@ export default function Navbar() {
                     >
                       Saved
                     </NavLink>
+                    <NavLink
+                      to="/messages"
+                      className={({ isActive }) =>
+                        `relative flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          isActive ? 'text-brand' : 'text-slate-600 hover:text-navy-900'
+                        }`
+                      }
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      Messages
+                      <UnreadBadge />
+                    </NavLink>
                   </>
                 )}
               </>
@@ -142,8 +156,21 @@ export default function Navbar() {
                 >
                   My Courses
                 </NavLink>
+                <NavLink
+                  to="/messages"
+                  className={({ isActive }) =>
+                    `relative flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      isActive ? 'text-brand' : 'text-slate-600 hover:text-navy-900'
+                    }`
+                  }
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  Messages
+                  <UnreadBadge />
+                </NavLink>
               </>
             )}
+            
           </nav>
 
           {/* Right side */}
@@ -226,6 +253,15 @@ export default function Navbar() {
                           <GraduationCap size={15} /> My Courses
                         </Link>
 
+                        <Link
+                          to="/messages"
+                          onClick={() => setDropOpen(false)}
+                          className="relative flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-slate-50"
+                        >
+                          <MessageSquare size={15} /> Messages
+                          <UnreadBadge />
+                        </Link>
+
                         <div className="border-t my-1" />
                       </>
                     )}
@@ -259,6 +295,15 @@ export default function Navbar() {
                           className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-slate-50"
                         >
                           <BookmarkCheck size={15} /> Saved Internships
+                        </Link>
+
+                        <Link
+                          to="/messages"
+                          onClick={() => setDropOpen(false)}
+                          className="relative flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-slate-50"
+                        >
+                          <MessageSquare size={15} /> Messages
+                          <UnreadBadge />
                         </Link>
 
                         <Link
@@ -328,6 +373,19 @@ export default function Navbar() {
               <MobileLink to="/organization/courses" onClick={() => setMobileOpen(false)}>
                 My Courses
               </MobileLink>
+              <NavLink
+                to="/messages"
+                onClick={() => setMobileOpen(false)}
+                className={({ isActive }) =>
+                  `relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl ${
+                    isActive ? 'bg-brand/10 text-brand' : 'text-slate-700 hover:bg-slate-50'
+                  }`
+                }
+              >
+                <MessageSquare className="w-4 h-4" />
+                Messages
+                <UnreadBadge />
+              </NavLink>
             </>
           )}
 
@@ -339,6 +397,19 @@ export default function Navbar() {
               <MobileLink to="/saved" onClick={() => setMobileOpen(false)}>
                 Saved Internships
               </MobileLink>
+              <NavLink
+                to="/messages"
+                onClick={() => setMobileOpen(false)}
+                className={({ isActive }) =>
+                  `relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl ${
+                    isActive ? 'bg-brand/10 text-brand' : 'text-slate-700 hover:bg-slate-50'
+                  }`
+                }
+              >
+                <MessageSquare className="w-4 h-4" />
+                Messages
+                <UnreadBadge />
+              </NavLink>
               <MobileLink to="/profile" onClick={() => setMobileOpen(false)}>
                 Profile
               </MobileLink>

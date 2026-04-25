@@ -4,6 +4,8 @@ A platform connecting organizations with youth for internship opportunities. Bui
 
 ---
 
+
+
 ## 📋 Table of Contents
 
 - [Project Overview](#project-overview)
