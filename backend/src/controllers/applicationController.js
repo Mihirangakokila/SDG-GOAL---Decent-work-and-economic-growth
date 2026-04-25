@@ -4,6 +4,7 @@ import User from '../models/User.js';
 import { calculateEligibilityScore } from '../services/matchingService.js';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { sendNewApplicationNotification } from '../utils/emailService.js';
+import { pushApplicationUpdate } from '../socket/socketServer.js'; // ← NEW
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -188,6 +189,64 @@ export const updateApplication = async (req, res) => {
   }
 };
 
+// ── PATCH /api/applications/:id/status ───────────────────────────────────────
+// Used by HR / organization to update application status (Applied → Under Review → Accepted/Rejected)
+
+export const updateApplicationStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const allowedStatuses = ['Applied', 'Under Review', 'Accepted', 'Rejected'];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ message: `Invalid status. Must be one of: ${allowedStatuses.join(', ')}` });
+    }
+
+    // Only organization or admin can update status
+    if (req.user.role !== 'organization' && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized to update application status' });
+    }
+
+    const application = await Application.findById(id);
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+
+    // If org, verify they own the internship this application belongs to
+    if (req.user.role === 'organization') {
+      const internship = await Internship.findById(application.internshipId);
+      if (!internship) {
+        return res.status(404).json({ message: 'Internship not found' });
+      }
+      if (internship.organizationId.toString() !== req.user.id) {
+        return res.status(403).json({ message: 'Not authorized: this application is not for your internship' });
+      }
+    }
+
+    application.status      = status;
+    application.updatedDate = new Date();
+    await application.save();
+
+    // ── 🔴 Real-time push to the applicant via Socket.IO ──────────────────
+    const io = req.app.locals.io;
+    if (io) {
+      pushApplicationUpdate(io, String(application.youthId), {
+        applicationId: application._id,
+        internshipId:  application.internshipId,
+        status:        application.status,
+        updatedAt:     application.updatedDate,
+      });
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
+    res.json({ success: true, message: `Status updated to "${status}"`, data: application });
+
+  } catch (error) {
+    console.error('Error in updateApplicationStatus:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // ── GET /api/applications/my ──────────────────────────────────────────────────
 
 export const getMyApplications = async (req, res) => {
@@ -291,15 +350,16 @@ export const withdrawApplication = async (req, res) => {
   }
 };
 
-// ── GET /api/applications/internship/:internshipId ────────────────────────────────
+// ── GET /api/applications/internship/:internshipId ────────────────────────────
+
 export const getApplicationsByInternship = async (req, res) => {
   try {
-    const { internshipId } = req.params
+    const { internshipId } = req.params;
     const applications = await Application.find({ internshipId })
       .select('name email phoneNumber status eligibilityScore appliedDate cvUrl')
-      .sort({ appliedDate: -1 })
-    res.json({ success: true, data: applications })
+      .sort({ appliedDate: -1 });
+    res.json({ success: true, data: applications });
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    res.status(500).json({ message: error.message });
   }
-}
+};
